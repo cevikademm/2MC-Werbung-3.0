@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>BAC Handels — Geliştirme Raporu (29-30 Nisan 2026)</title>
+<style>
+  @page { size: A4; margin: 18mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #18181b;
+    line-height: 1.45;
+    font-size: 10.5pt;
+    background: #fff;
+  }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  /* === COVER === */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #7c3aed 100%);
+    color: #fff;
+    padding: 40mm 20mm;
+    margin: -18mm -14mm;
+  }
+  .cover .badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    font-size: 9pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    color: #ddd6fe;
+  }
+  .cover h1 {
+    font-size: 34pt;
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(to right, #fff, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+  .cover .subtitle {
+    font-size: 13pt;
+    color: #c4b5fd;
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+  .cover .meta {
+    display: flex;
+    gap: 40px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cover .meta div { text-align: center; }
+  .cover .meta .num { font-size: 28pt; font-weight: 900; color: #fff; }
+  .cover .meta .lbl {
+    font-size: 8.5pt;
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* === SECTION HEADERS === */
+  h2 {
+    font-size: 18pt;
+    font-weight: 800;
+    color: #312e81;
+    border-bottom: 2px solid #6366f1;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #4338ca;
+    margin: 14px 0 6px 0;
+  }
+  p { margin-bottom: 8px; }
+  code {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 9pt;
+    font-family: Consolas, monospace;
+  }
+
+  /* === FEATURE BLOCK === */
+  .feature {
+    border-left: 4px solid #6366f1;
+    background: #f5f3ff;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 0 6px 6px 0;
+    page-break-inside: avoid;
+  }
+  .feature.security { border-color: #ef4444; background: #fef2f2; }
+  .feature.security h3 { color: #b91c1c; }
+  .feature.ux { border-color: #10b981; background: #ecfdf5; }
+  .feature.ux h3 { color: #047857; }
+  .feature.ai { border-color: #a855f7; background: #faf5ff; }
+  .feature.ai h3 { color: #7e22ce; }
+  .feature .what { color: #18181b; margin-bottom: 4px; font-size: 10pt; }
+  .feature .gain { font-size: 9pt; color: #525252; font-style: italic; padding-top: 4px; border-top: 1px dashed #d4d4d8; margin-top: 6px; }
+  .feature .gain strong { color: #18181b; font-style: normal; }
+
+  /* === KAZANIM CARDS === */
+  .gains-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .gain-card {
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    page-break-inside: avoid;
+  }
+  .gain-card .ico {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #4338ca, #7c3aed);
+    border-radius: 8px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16pt;
+    margin-bottom: 8px;
+  }
+  .gain-card h4 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #18181b;
+    margin-bottom: 4px;
+  }
+  .gain-card p {
+    font-size: 9pt;
+    color: #52525b;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* === STATS BAR === */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 16px 0;
+  }
+  .stat {
+    text-align: center;
+    padding: 12px 8px;
+    background: linear-gradient(135deg, #1e1b4b, #4338ca);
+    color: #fff;
+    border-radius: 8px;
+  }
+  .stat .num { font-size: 22pt; font-weight: 900; line-height: 1; }
+  .stat .lbl { font-size: 8pt; color: #c7d2fe; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* === TIMELINE === */
+  .timeline {
+    border-left: 2px solid #c7d2fe;
+    margin-left: 8px;
+    padding-left: 18px;
+    margin-bottom: 14px;
+  }
+  .timeline-item {
+    margin-bottom: 10px;
+    position: relative;
+    page-break-inside: avoid;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    background: #6366f1;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #6366f1;
+  }
+  .timeline-item .date {
+    font-size: 8.5pt;
+    color: #6366f1;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .timeline-item .title {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #18181b;
+    margin: 2px 0;
+  }
+  .timeline-item .desc {
+    font-size: 9pt;
+    color: #525252;
+  }
+
+  /* === ROADMAP === */
+  .roadmap-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    page-break-inside: avoid;
+  }
+  .roadmap-item .priority {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 11pt;
+    color: #fff;
+  }
+  .roadmap-item.high .priority { background: #ef4444; }
+  .roadmap-item.med .priority { background: #f59e0b; }
+  .roadmap-item.low .priority { background: #10b981; }
+  .roadmap-item .body h4 { font-size: 10.5pt; font-weight: 700; color: #18181b; margin-bottom: 2px; }
+  .roadmap-item .body p { font-size: 9pt; color: #525252; margin: 0; }
+
+  /* === FOOTER === */
+  .doc-footer {
+    margin-top: 30px;
+    padding-top: 14px;
+    border-top: 1px solid #e4e4e7;
+    font-size: 8.5pt;
+    color: #71717a;
+    text-align: center;
+  }
+
+  /* === UTILITIES === */
+  .lead {
+    font-size: 11pt;
+    color: #4338ca;
+    font-style: italic;
+    background: #eef2ff;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 12px 0;
+  }
+  .tag {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #4338ca;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 8pt;
+    font-weight: 700;
+    margin: 0 4px 4px 0;
+  }
+  .tag.sec { background: #fee2e2; color: #b91c1c; }
+  .tag.ai { background: #f3e8ff; color: #7e22ce; }
+  .tag.ux { background: #d1fae5; color: #047857; }
+
+  /* === SCREEN PREVIEW === */
+  @media screen {
+    body { background: #f4f4f5; padding: 20px; }
+    .page { background: #fff; max-width: 21cm; min-height: 29.7cm; margin: 0 auto 20px; padding: 18mm 14mm; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .page.cover-page { padding: 0; overflow: hidden; }
+    .page.cover-page .cover { margin: 0; }
+  }
+  @media print {
+    .page { padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ KAPAK ============ -->
+<div class="page cover-page">
+  <div class="cover">
+    <div class="badge">Geliştirme Raporu</div>
+    <h1>BAC Handels<br>Yönetim Sistemi</h1>
+    <div class="subtitle">29-30 Nisan 2026 · 48 saatlik geliştirme bilançosu</div>
+
+    <div class="meta">
+      <div>
+        <div class="num">11</div>
+        <div class="lbl">Yeni Özellik</div>
+      </div>
+      <div>
+        <div class="num">7</div>
+        <div class="lbl">Modül Etki</div>
+      </div>
+      <div>
+        <div class="num">5</div>
+        <div class="lbl">DB Migration</div>
+      </div>
+      <div>
+        <div class="num">10+</div>
+        <div class="lbl">Production Deploy</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 60px; font-size: 9.5pt; color: rgba(255,255,255,0.7);">
+      Operasyonel verim · Anti-fraud · AI destekli karar verme
+    </div>
+  </div>
+</div>
+
+<!-- ============ ÖZET ============ -->
+<div class="page">
+  <h2>Yönetici Özeti</h2>
+
+  <div class="lead">
+    İki gün içinde sistem; envanter görünürlüğü, anti-fraud koruması, mobil
+    operasyon ve AI destekli karar verme katmanlarıyla genişletildi. Patrona
+    sunulan dashboard artık şubeler arası karşılaştırma, personel sinerji
+    önerileri ve canlı anomali tespiti üretiyor.
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="num">11</div><div class="lbl">Commit</div></div>
+    <div class="stat"><div class="num">~2.5k</div><div class="lbl">Satır Kod</div></div>
+    <div class="stat"><div class="num">4</div><div class="lbl">Yeni Veri Alanı</div></div>
+    <div class="stat"><div class="num">5</div><div class="lbl">Anti-Fraud Katman</div></div>
+  </div>
+
+  <h3>Hedeflenen Sorunlar &amp; Çözümler</h3>
+
+  <div class="feature security">
+    <h3>🛡️ Şifre paylaşımı &amp; sahte mesai girişleri</h3>
+    <div class="what">Personel A şifresini B'ye verip B'nin telefonundan giriş yaptırma riski.</div>
+    <div class="gain"><strong>Çözüm:</strong> Her QR girişinde cihaz markası kayıt altında. Baskın cihaz dışında bir telefondan giriş gelirse <em>"Telefon Çakışması"</em> rozeti otomatik çıkar.</div>
+  </div>
+
+  <div class="feature ai">
+    <h3>🧠 Veriye dayalı yönetim eksikliği</h3>
+    <div class="what">Şube bazında performans karşılaştırması, personel sinerji ölçümü manuel ve sezgiseldi.</div>
+    <div class="gain"><strong>Çözüm:</strong> AI Analiz paneli; şube skor sıralaması, personel performans tablosu, ikili sinerji önerileri ve otomatik içgörüler.</div>
+  </div>
+
+  <div class="feature">
+    <h3>📦 Stok takibi parçalı, manuel</h3>
+    <div class="what">Stok girişi ve satış arasında bağ yoktu; kayıp manuel keşfediliyordu.</div>
+    <div class="gain"><strong>Çözüm:</strong> Mevcut Stok Durumu canlı tablo: stok-girişi − bekleyen+onaylı satış = kalan. Negatif/azalan kalan otomatik renk kodlu.</div>
+  </div>
+
+  <div class="feature ux">
+    <h3>🧾 Satış denetim izi yok</h3>
+    <div class="what">Satışın gerçekten yapıldığını fişle ispatlama yoktu — itiraz durumlarında ispat zayıf.</div>
+    <div class="gain"><strong>Çözüm:</strong> Her satışta zorunlu fiş fotoğrafı (kamera/galeri seçim modalı), otomatik sıkıştırma, Supabase Storage'a kayıt.</div>
+  </div>
+</div>
+
+<!-- ============ ANA YAPILANLAR ============ -->
+<div class="page">
+  <h2>Ana Geliştirmeler</h2>
+
+  <h3 style="color:#7e22ce">🧠 AI Analiz Paneli <span class="tag ai">Sadece Süper Admin</span></h3>
+  <div class="feature ai">
+    <h3>Canlı algoritma + içgörü motoru</h3>
+    <div class="what">
+      • Hero kartlar: en iyi şube, ayın yıldızı, aktif personel, sinerji ikilisi.<br>
+      • Şube sıralaması: skor formülü <code>onaylı×10 − kayıp×5 − red×2 − mesai_dışı×1</code>.<br>
+      • Personel performansı: top 15, onay yüzdesi renk kodlu, en sık çalıştığı şube.<br>
+      • <b>Eşleşme önerileri:</b> Vardiya planı + onaylı satış verisi karşılaştırılarak her şube için sinerji ikilisi (örn: <i>"Ahmet + Elif Tobacgo'da %37 fazla satış üretiyor — birlikte planlamak satışları artırır"</i>).
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> Patron veri tabanlı kararla vardiya planlayabilir; en güçlü ikilileri stratejik şubelerde konumlandırarak satış kapasitesini artırır.</div>
+  </div>
+
+  <h3 style="color:#b91c1c">🛡️ Anti-Fraud: Telefon Çakışması <span class="tag sec">4 Admin</span></h3>
+  <div class="feature security">
+    <h3>Şifre paylaşımı tespiti</h3>
+    <div class="what">
+      QR check-in'de cihaz markası (<i>Apple iPhone, Samsung SM-S918B, Google Pixel 8</i>) UA'dan tespit edilip <code>time_logs.device_info</code>'ya yazılır. Her kullanıcının "baskın cihazı" hesaplanır (≥3 kullanım + 2× üstün). Yeni bir giriş baskın cihazdan farklıysa <strong>kırmızı pulse'lu uyarı</strong> çıkar; tooltip'te alışılmış cihaz gösterilir.
+    </div>
+    <div class="gain"><strong>Senaryo:</strong> Personel A normalde Apple iPhone ile giriş yapar, bir gün Samsung SM-S918B ile geliyor → admin manuel inceler, gerçekten yeni telefon mu yoksa şifre paylaşımı mı netleşir.</div>
+  </div>
+
+  <h3 style="color:#047857">📦 Kayıp Önleme &amp; Stok Yönetimi <span class="tag ux">Tüm Personel</span></h3>
+  <div class="feature ux">
+    <h3>Personellere açık panel + WhatsApp eskalasyon</h3>
+    <div class="what">
+      Panel artık tüm personellere açık (label: "Stok"). Personeller stok girişi yapabilir; düzenle/sil sadece adminde. Stok hatası gördüklerinde sağ-alttaki <strong>yeşil WhatsApp FAB</strong> ile +90 532 496 14 12 numarasına 1 dokunuşla ulaşabilirler. Mevcut Stok Durumu tablosu canlı: <code>giriş − (onaylı+bekleyen) = kalan</code>; negatif/azalan değerler renk kodlu uyarı verir.
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> Şube personeli envantere doğrudan katkı verir, sorun gördüğünde anında patrona iletir → tespit-aksiyon süresi saatler yerine dakikalara iner.</div>
+  </div>
+</div>
+
+<div class="page">
+  <h2>Ana Geliştirmeler — devam</h2>
+
+  <h3 style="color:#4338ca">🧾 Satış Akışı: Fiş Fotoğrafı</h3>
+  <div class="feature">
+    <h3>Zorunlu denetim izi</h3>
+    <div class="what">
+      Satış girişinde "Fiş Çek &amp; Ekle" butonu mobilde arka kamerayı (<code>capture="environment"</code>), masaüstünde dosya seçiciyi tetikler. Foto canvas-tabanlı sıkıştırılır (max 800px / q=0.6 → ~30-80 KB ama metin okunaklı), EXIF rotasyonu otomatik düzeltilir. Public Storage bucket'a yüklenir, URL <code>sales_logs.receipt_url</code>'a yazılır.
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> İtiraz/şüphe durumunda her satışın fiziksel kanıtı 1 tıkla erişilebilir. Mesai-dışı satış tespiti ile birleştirildiğinde anti-fraud katmanı tamamlanır.</div>
+  </div>
+
+  <h3 style="color:#4338ca">🕒 Mesai Dışı Satış Tespiti</h3>
+  <div class="feature">
+    <h3>is_off_shift bayrağı</h3>
+    <div class="what">
+      Satış girişi anında kullanıcının vardiya çizelgesi kontrol edilir. Vardiyada değilse satış reddedilir (admin muafiyetli); admin yine de kayda <code>is_off_shift=true</code> olarak düşürür. Yönetici panelinde <strong>"MESAİ DIŞI"</strong> kırmızı rozeti gösterilir.
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> Personel evden satış girip prim/komisyon manipüle etmeyi deneyemez; deneyse bile etiketlenir.</div>
+  </div>
+
+  <h3 style="color:#4338ca">🌍 Çoklu Dil &amp; Mobil Uyumluluk</h3>
+  <div class="feature">
+    <h3>TR/DE çeviri kapsamı + Samsung uyumluluk</h3>
+    <div class="what">
+      Tüm UI metinleri TR/DE çevirisi tamam (Almanya operasyonu için kritik). Eski Samsung Internet'te 100dvh CSS desteklenmediği için ekran yüksekliği 0 kalıyordu — fallback (<code>height: 100vh; height: 100dvh;</code>) ile sorun giderildi. Mobil bottom-nav, satış kartında şube ikonu (MapPin yeşil), Kayıp Önleme paneli scroll edilebilir hale getirildi.
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> Almanya'daki personel ana dilinde kullanır, eski Samsung cihazlarda da sorunsuz çalışır → kullanım oranı düşmez.</div>
+  </div>
+
+  <h3 style="color:#4338ca">🗓️ Timezone Düzeltmesi</h3>
+  <div class="feature">
+    <h3>Vardiya tarihleri yerel saatte</h3>
+    <div class="what">
+      Önceki kodda <code>toISOString()</code> kullanıldığı için Almanya saatinde Pazartesi gibi görünen gün UTC'ye çevrilince Pazar oluyordu — vardiya kayıtları "atama yapılmamış gibi" görünüyordu. Yeni <code>formatLocalDate()</code> helper'ı yerel takvim tarihinden <code>YYYY-MM-DD</code> üretir.
+    </div>
+    <div class="gain"><strong>İş değeri:</strong> Calendar / Payroll / ShiftSchedule arasındaki uyuşmazlık ortadan kalktı; "vardiya görünmüyor" şikayetleri tarihçeye gömüldü.</div>
+  </div>
+</div>
+
+<!-- ============ KAZANIMLAR ============ -->
+<div class="page">
+  <h2>Operasyonel Kazanımlar</h2>
+
+  <p>Geliştirmeler somut iş etkilerine bağlanır. Aşağıda her ana modülün
+  ürettiği değer özetlenmiştir:</p>
+
+  <div class="gains-grid">
+    <div class="gain-card">
+      <div class="ico">🎯</div>
+      <h4>Karar Verme Hızı</h4>
+      <p>AI Analiz panelinde 6 KPI kart + canlı içgörü → hangi şubenin attack edileceği saniyeler içinde belli olur.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">🤝</div>
+      <h4>Personel Sinerjisi</h4>
+      <p>Eşleşme önerileri ile en güçlü ikililer otomatik tespit edilir. Patron <i>"Ahmet+Elif Tobacgo'da %37 fazla satış"</i> gibi somut bir veriyle planlama yapar.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">🛡️</div>
+      <h4>Anti-Fraud Koruması</h4>
+      <p>Telefon Çakışması + Mesai Dışı + Fiş Fotoğrafı üçlü katman: şifre paylaşımı, evden satış, sahte kayıt riskleri otomatik flag'lenir.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">📊</div>
+      <h4>Envanter Doğruluğu</h4>
+      <p>Mevcut Stok Durumu = giriş − satış. Bekleyen onaylar bile düşülüyor → anlık doğru stok. Personel direkt katkı verir.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">💬</div>
+      <h4>Hızlı Eskalasyon</h4>
+      <p>WhatsApp FAB butonu — personel sorun gördüğünde 1 dokunuşla yöneticiye ulaşır. Önceden e-posta/telefonla saatler süren süreç dakikaya iner.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">📱</div>
+      <h4>Mobil Operasyon</h4>
+      <p>Tüm Samsung/Apple/Xiaomi cihazlarda sorunsuz. Kameradan fiş çekme, mobile-first satış akışı, alt nav, branch chip görünür.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">🌍</div>
+      <h4>Lokalizasyon</h4>
+      <p>TR + DE tam çeviri kapsamı; Almanya operasyonunda dil engeli yok. Yeni metin eklendiğinde eksiksiz çevrilme süreci kuruldu.</p>
+    </div>
+
+    <div class="gain-card">
+      <div class="ico">🧾</div>
+      <h4>Denetim İzi</h4>
+      <p>Her satış fiş fotoğrafıyla kayıt altında. İtiraz/sahtelik durumunda ispat 1 tıkla erişilir — yıllarca saklanır.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TIMELINE ============ -->
+<div class="page">
+  <h2>Geliştirme Zaman Çizelgesi</h2>
+
+  <p>11 commit · 48 saat · production'a 10+ deploy</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="date">29 Nis · 14:05</div>
+      <div class="title">Yerel timezone fix</div>
+      <div class="desc">Vardiya tarihlerinin UTC'ye kayması düzeltildi (formatLocalDate helper).</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">29 Nis · 14:05</div>
+      <div class="title">Mesai dışı satış takibi</div>
+      <div class="desc">is_off_shift bayrağı + satış engeli + admin muafiyeti.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">29 Nis · 14:05</div>
+      <div class="title">Kayıp Önleme personellere açıldı</div>
+      <div class="desc">Stok girişi tüm kullanıcılarda · WhatsApp eskalasyon · admin edit/delete · Mevcut Stok Durumu.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">29 Nis · 14:18</div>
+      <div class="title">Mobil satış kartı şube ikonu</div>
+      <div class="desc">MapPin emerald — şube ve ürün chip'leri ayırt edilebilir oldu.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 01:33</div>
+      <div class="title">Satışa fiş fotoğrafı</div>
+      <div class="desc">Kamera/dosya · sıkıştırma · Storage upload · stoktan otomatik düşme.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 01:33</div>
+      <div class="title">Samsung 100dvh fallback</div>
+      <div class="desc">Eski Samsung Internet uyumluluğu — ekran yüksekliği 0 kalmıyor.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 02:07</div>
+      <div class="title">AI Analiz sekmesi + ürün filtresi</div>
+      <div class="desc">Hero kartlar · şube sıralaması · personel performansı · eşleşme önerileri · içgörüler.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 02:48</div>
+      <div class="title">TR→DE çeviri kapsamı</div>
+      <div class="desc">Tüm UI metinleri Almanca · mesai dışı satış kontrolü · Samsung mobil bottom-nav fix.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 10:26</div>
+      <div class="title">Satış fişinde kaynak seçim modalı</div>
+      <div class="desc">Kamera mı galeri mi seçim modalı + manuel mesai push tetikleyicisi.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 13:01</div>
+      <div class="title">QR girişinde cihaz bilgisi</div>
+      <div class="desc">UserAgent → Apple iPhone / Samsung SM-… / Pixel / Redmi → time_logs.device_info.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="date">30 Nis · 14:33</div>
+      <div class="title">Telefon Çakışması tespiti</div>
+      <div class="desc">Baskın cihaz analizi · şifre paylaşımı şüphesinde otomatik kırmızı uyarı.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ROADMAP ============ -->
+<div class="page">
+  <h2>Sıradaki Adımlar (Önerilen Roadmap)</h2>
+
+  <p>Bu sürümle kurulan altyapı üzerine eklenebilecek doğal devamlar:</p>
+
+  <div class="roadmap-item high">
+    <div class="priority">1</div>
+    <div class="body">
+      <h4>Telefon Çakışması Bildirim Sistemi</h4>
+      <p>Çakışma tespit edildiğinde patrona anında push/WhatsApp bildirimi git. Reaktif yerine proaktif anti-fraud.</p>
+    </div>
+  </div>
+
+  <div class="roadmap-item high">
+    <div class="priority">2</div>
+    <div class="body">
+      <h4>AI Analiz — Tahminsel Modüller</h4>
+      <p>Geçmiş veriden gelecek hafta için satış tahmini. "Tobacgo bu hafta 250 satış bekliyor — 2 personel daha yetmez" gibi öneri.</p>
+    </div>
+  </div>
+
+  <div class="roadmap-item med">
+    <div class="priority">3</div>
+    <div class="body">
+      <h4>Otomatik Haftalık Patron Raporu</h4>
+      <p>Her Pazartesi sabahı; haftanın liderleri, anormal aktiviteler, kayıplar, sinerji önerileri otomatik PDF olarak e-postaya düşsün.</p>
+    </div>
+  </div>
+
+  <div class="roadmap-item med">
+    <div class="priority">4</div>
+    <div class="body">
+      <h4>Fiş OCR Doğrulaması</h4>
+      <p>Yüklenen fiş fotoğrafından OCR ile tutar &amp; ürün eşleştirilsin. Form girişiyle otomatik karşılaştırılır → sahte fiş riski sıfır.</p>
+    </div>
+  </div>
+
+  <div class="roadmap-item low">
+    <div class="priority">5</div>
+    <div class="body">
+      <h4>Personel Mobile App (PWA)</h4>
+      <p>Web zaten PWA ama Android/iOS App Store'a paketlenmiş versiyon — push bildirimi daha güvenilir, offline mode.</p>
+    </div>
+  </div>
+
+  <div class="roadmap-item low">
+    <div class="priority">6</div>
+    <div class="body">
+      <h4>Şube Bazında Hedef Kartları</h4>
+      <p>Patron her şubeye haftalık satış hedefi atar; AI Analiz panelinde gerçekleşme yüzdesi canlı gösterilir.</p>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <strong>BAC Handels Yönetim Sistemi</strong> · Geliştirme Raporu · 29-30 Nisan 2026<br>
+    Hazırlayan: Geliştirme Ekibi · Sürüm: aa95af9 · Production: bac-handels-201.vercel.app
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+# Shannon Pentest Docker Compose
+# BAC Handels icin guvenlik testi ortami
+
+version: "3.8"
+
+services:
+  # Temporal Server - Workflow orkestrasyonu
+  temporal:
+    image: temporalio/auto-setup:latest
+    ports:
+      - "7233:7233"   # gRPC
+      - "8233:8233"   # Web UI
+    environment:
+      - DB=sqlite
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+
+  # Shannon Worker - Ana pentest motoru
+  shannon-worker:
+    image: ghcr.io/keygraphhq/shannon:latest
+    depends_on:
+      - temporal
+    volumes:
+      # Kaynak kodu Shannon'a bagla
+      - ..:/app/repos/bac-handels:ro
+      # Konfigurasyon dosyasi
+      - ./config.yaml:/app/configs/bac-handels.yaml:ro
+      # Raporlarin kaydedilecegi dizin
+      - ./reports:/app/reports
+    environment:
+      # Anthropic API Key (zorunlu)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Temporal baglantisi
+      - TEMPORAL_ADDRESS=temporal:7233
+      # Hedef URL (Docker icinden host'a erisim)
+      - TARGET_URL=http://host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    shm_size: "2gb"
+    networks:
+      - shannon-net
+
+  # Shannon Router (Opsiyonel - coklu AI model destegi)
+  # Kullanmak icin OPENAI_API_KEY veya diger API key'leri ekleyin
+  # shannon-router:
+  #   image: ghcr.io/keygraphhq/shannon-router:latest
+  #   depends_on:
+  #     - temporal
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #   ports:
+  #     - "4000:4000"
+  #   networks:
+  #     - shannon-net
+
+networks:
+  shannon-net:
+    driver: bridge

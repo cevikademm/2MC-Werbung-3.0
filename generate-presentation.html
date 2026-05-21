@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'">
+<title>BAC Handels - Yonetim Sistemi Sunum Raporu</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #a5b4fc;
+    --bg: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #3b82f6;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: #f1f5f9;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- Print Button ---- */
+  .print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(99,102,241,.4);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,.5); }
+  @media print { .print-btn { display: none; } }
+
+  /* ---- Page ---- */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 20px auto;
+    background: #fff;
+    box-shadow: 0 2px 20px rgba(0,0,0,.08);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    padding: 0;
+  }
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; width: 210mm; min-height: 297mm; }
+  }
+
+  /* ---- Page Header ---- */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 2px solid var(--primary);
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  }
+  .page-header h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .page-num {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ---- Page Footer ---- */
+  .page-footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 10px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    color: var(--text-light);
+    border-top: 1px solid var(--border);
+    background: var(--gray-50);
+  }
+  .page-footer .conf {
+    color: var(--danger);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  /* ---- Page Content ---- */
+  .page-body {
+    padding: 24px 32px 60px;
+  }
+
+  /* ---- Cover ---- */
+  .cover {
+    width: 210mm;
+    min-height: 297mm;
+    background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 35%, #312e81 65%, #4338ca 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    margin: 20px auto;
+    box-shadow: 0 2px 20px rgba(0,0,0,.08);
+  }
+  @media print { .cover { margin: 0; box-shadow: none; } }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(99,102,241,.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(139,92,246,.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .cover-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .cover-badge {
+    display: inline-block;
+    padding: 6px 20px;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 30px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    backdrop-filter: blur(4px);
+    background: rgba(255,255,255,.05);
+    position: relative;
+  }
+  .cover-logo {
+    font-size: 72px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    position: relative;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cover-sub {
+    font-size: 18px;
+    font-weight: 300;
+    color: rgba(255,255,255,.7);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .cover-title {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .cover-desc {
+    font-size: 15px;
+    color: rgba(255,255,255,.6);
+    max-width: 500px;
+    line-height: 1.6;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .cover-line {
+    width: 60px;
+    height: 3px;
+    background: var(--primary-light);
+    border-radius: 2px;
+    margin: 0 auto 48px;
+    position: relative;
+  }
+  .cover-meta {
+    position: relative;
+    font-size: 12px;
+    color: rgba(255,255,255,.4);
+    letter-spacing: 1px;
+  }
+  .cover-meta span { margin: 0 12px; }
+  .cover-score {
+    position: absolute;
+    top: 32px; right: 32px;
+    text-align: center;
+    z-index: 2;
+  }
+  .cover-score-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--success);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    background: rgba(34,197,94,.1);
+  }
+  .cover-score-num { font-size: 28px; font-weight: 800; color: var(--success); line-height: 1; }
+  .cover-score-label { font-size: 8px; color: rgba(255,255,255,.5); letter-spacing: 1px; margin-top: 2px; }
+  .cover-conf {
+    position: absolute;
+    bottom: 24px;
+    font-size: 10px;
+    color: rgba(255,255,255,.3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 2;
+  }
+
+  /* ---- Section Title ---- */
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .icon {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .section-sub {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* ---- Metric Cards ---- */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .metric-card {
+    background: linear-gradient(135deg, var(--gray-50) 0%, #eef2ff 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+  .metric-card .num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.2;
+  }
+  .metric-card .label {
+    font-size: 10px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-top: 4px;
+  }
+
+  /* ---- Tables ---- */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-bottom: 16px;
+  }
+  .data-table th {
+    background: var(--primary);
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .data-table th:first-child { border-radius: 6px 0 0 0; }
+  .data-table th:last-child { border-radius: 0 6px 0 0; }
+  .data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table tr:nth-child(even) td { background: var(--gray-50); }
+  .data-table tr:hover td { background: #eef2ff; }
+
+  /* ---- Tags ---- */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .tag-green { background: #dcfce7; color: #166534; }
+  .tag-red { background: #fee2e2; color: #991b1b; }
+  .tag-blue { background: #dbeafe; color: #1e40af; }
+  .tag-yellow { background: #fef3c7; color: #92400e; }
+  .tag-gray { background: #f1f5f9; color: #475569; }
+  .tag-purple { background: #ede9fe; color: #5b21b6; }
+
+  /* ---- Tech Stack Grid ---- */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .tech-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    background: var(--gray-50);
+    transition: box-shadow .2s;
+  }
+  .tech-card:hover { box-shadow: 0 2px 10px rgba(99,102,241,.15); }
+  .tech-card .tech-icon { font-size: 24px; margin-bottom: 6px; }
+  .tech-card .tech-name { font-size: 12px; font-weight: 700; color: var(--gray-800); }
+  .tech-card .tech-ver { font-size: 10px; color: var(--text-light); }
+
+  /* ---- Architecture Flow ---- */
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 100px;
+  }
+  .arch-box.alt {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  }
+  .arch-box.green {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  }
+  .arch-box.purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+  .arch-box small { display: block; font-weight: 400; font-size: 9px; opacity: .8; margin-top: 2px; }
+  .arch-arrow {
+    font-size: 18px;
+    color: var(--primary);
+    margin: 0 6px;
+    font-weight: 700;
+  }
+
+  /* ---- CSS Pie Chart ---- */
+  .pie-wrap {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .pie-chart {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #6366f1 0deg 194.4deg,
+      #3b82f6 194.4deg 262.8deg,
+      #22c55e 262.8deg 298.8deg,
+      #f59e0b 298.8deg 324deg,
+      #8b5cf6 324deg 345.6deg,
+      #94a3b8 345.6deg 360deg
+    );
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  }
+  .pie-chart::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 60px; height: 60px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  .pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pie-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .pie-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ---- CSS Bar Chart ---- */
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar-label {
+    font-size: 10px;
+    width: 90px;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--text-light);
+  }
+  .bar-track {
+    flex: 1;
+    height: 18px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+    font-size: 9px;
+    color: #fff;
+    font-weight: 600;
+    min-width: 30px;
+  }
+
+  /* ---- Module Cards ---- */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .module-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .module-card .m-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .module-card .m-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 2px;
+  }
+  .module-card .m-desc {
+    font-size: 10px;
+    color: var(--text-light);
+    line-height: 1.4;
+  }
+
+  /* ---- Score Meter ---- */
+  .score-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 20px;
+  }
+  .score-ring {
+    position: relative;
+    width: 140px; height: 140px;
+    flex-shrink: 0;
+  }
+  .score-ring svg { width: 140px; height: 140px; transform: rotate(-90deg); }
+  .score-ring .bg { fill: none; stroke: var(--gray-200); stroke-width: 10; }
+  .score-ring .fg { fill: none; stroke-width: 10; stroke-linecap: round; }
+  .score-ring .old { stroke: var(--danger); stroke-dasharray: 110 314; opacity: .3; }
+  .score-ring .new { stroke: var(--success); stroke-dasharray: 283 314; }
+  .score-ring .center-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+  }
+  .score-ring .center-text .big { font-size: 32px; font-weight: 800; color: var(--success); display: block; line-height: 1; }
+  .score-ring .center-text .sub { font-size: 10px; color: var(--text-light); }
+  .score-detail h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+  .score-detail p { font-size: 12px; color: var(--text-light); line-height: 1.6; margin-bottom: 6px; }
+  .score-comparison {
+    display: flex; gap: 16px; margin-top: 10px;
+  }
+  .score-box {
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-align: center;
+    flex: 1;
+  }
+  .score-box.before { background: #fee2e2; border: 1px solid #fca5a5; }
+  .score-box.after { background: #dcfce7; border: 1px solid #86efac; }
+  .score-box .val { font-size: 24px; font-weight: 800; line-height: 1; }
+  .score-box.before .val { color: var(--danger); }
+  .score-box.after .val { color: var(--success); }
+  .score-box .lbl { font-size: 9px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
+
+  .arrow-right { font-size: 20px; color: var(--primary); display: flex; align-items: center; }
+
+  /* ---- Fix Table ---- */
+  .fix-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  .fix-table th {
+    background: var(--primary);
+    color: #fff;
+    padding: 6px 6px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+  .fix-table th:first-child { border-radius: 4px 0 0 0; }
+  .fix-table th:last-child { border-radius: 0 4px 0 0; }
+  .fix-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .fix-table tr:nth-child(even) td { background: var(--gray-50); }
+  .fix-before { color: var(--danger); font-weight: 600; }
+  .fix-after { color: var(--success); font-weight: 600; }
+  .fix-check { color: var(--success); font-size: 14px; font-weight: 700; text-align: center; }
+
+  /* ---- ER Diagram ---- */
+  .er-diagram {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .er-table {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 9px;
+  }
+  .er-table .er-head {
+    background: var(--primary);
+    color: #fff;
+    padding: 5px 8px;
+    font-weight: 700;
+    font-size: 10px;
+    text-align: center;
+  }
+  .er-table .er-row {
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+  }
+  .er-table .er-row:nth-child(even) { background: var(--gray-50); }
+  .er-pk { color: var(--warning); font-weight: 700; }
+  .er-fk { color: var(--info); font-weight: 600; }
+  .er-type { color: var(--text-light); font-size: 8px; }
+
+  /* ---- Pipeline ---- */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 16px 0;
+  }
+  .pipeline-step {
+    flex: 1;
+    padding: 14px 10px;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    font-size: 11px;
+  }
+  .pipeline-step:nth-child(1) { background: #6366f1; border-radius: 8px 0 0 8px; }
+  .pipeline-step:nth-child(2) { background: #4f46e5; }
+  .pipeline-step:nth-child(3) { background: #4338ca; }
+  .pipeline-step:nth-child(4) { background: #3730a3; }
+  .pipeline-step:nth-child(5) { background: #312e81; border-radius: 0 8px 8px 0; }
+  .pipeline-step .p-num { font-size: 18px; font-weight: 800; opacity: .5; }
+  .pipeline-step .p-title { font-weight: 700; font-size: 10px; margin-top: 2px; }
+  .pipeline-step .p-desc { font-size: 8px; opacity: .7; margin-top: 2px; }
+  .pipeline-step::after {
+    content: '>';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,.6);
+    font-size: 16px;
+    font-weight: 700;
+    z-index: 1;
+  }
+  .pipeline-step:last-child::after { display: none; }
+
+  /* ---- Checklist ---- */
+  .check-list { list-style: none; padding: 0; }
+  .check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 11px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .check-list li::before {
+    content: '\2713';
+    color: var(--success);
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  /* ---- TOC ---- */
+  .toc-list {
+    list-style: none;
+    padding: 0;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    transition: background .15s;
+  }
+  .toc-item:hover { background: var(--gray-50); }
+  .toc-num {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 14px;
+  }
+  .toc-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+  }
+  .toc-dots {
+    flex: 1;
+    border-bottom: 2px dotted var(--gray-200);
+    margin: 0 12px;
+    min-width: 40px;
+  }
+  .toc-page {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  /* ---- Two-col ---- */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ---- Info Box ---- */
+  .info-box {
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .info-box.green { background: #f0fdf4; border: 1px solid #86efac; }
+  .info-box.blue { background: #eff6ff; border: 1px solid #93c5fd; }
+  .info-box.amber { background: #fffbeb; border: 1px solid #fcd34d; }
+  .info-box.red { background: #fef2f2; border: 1px solid #fca5a5; }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  /* ---- Summary Cards (Conclusion) ---- */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .summary-card {
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    color: #fff;
+  }
+  .summary-card.c1 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+  .summary-card.c2 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+  .summary-card.c3 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  .summary-card .s-val { font-size: 28px; font-weight: 800; }
+  .summary-card .s-lbl { font-size: 10px; opacity: .8; margin-top: 2px; }
+
+  .contact-box {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    text-align: center;
+    margin-top: 16px;
+  }
+  .contact-box h3 { font-size: 16px; margin-bottom: 8px; }
+  .contact-box p { font-size: 12px; opacity: .7; }
+
+  /* Small helper */
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .text-sm { font-size: 11px; }
+  .text-xs { font-size: 10px; }
+  .fw-700 { font-weight: 700; }
+  .text-center { text-align: center; }
+  .text-muted { color: var(--text-light); }
+
+  /* Auth categories grid */
+  .auth-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .auth-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+  }
+  .auth-card.fixed::before { background: var(--success); }
+  .auth-card .auth-title { font-size: 11px; font-weight: 700; color: var(--gray-800); }
+  .auth-card .auth-desc { font-size: 9px; color: var(--text-light); margin-top: 2px; }
+  .auth-card .auth-status {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  /* ---- Supabase features ---- */
+  .supa-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .supa-card {
+    background: linear-gradient(135deg, #1c1c1c, #2d2d2d);
+    color: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .supa-card .s-icon { font-size: 22px; margin-bottom: 4px; }
+  .supa-card .s-name { font-size: 11px; font-weight: 700; }
+  .supa-card .s-desc { font-size: 9px; opacity: .6; margin-top: 2px; }
+
+  /* Schema detail tables */
+  .schema-block {
+    margin-bottom: 10px;
+  }
+  .schema-block h4 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-bottom: 6px;
+  }
+  .schema-table th {
+    background: var(--gray-800);
+    color: #fff;
+    padding: 4px 6px;
+    text-align: left;
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+  .schema-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .schema-table tr:nth-child(even) td { background: var(--gray-50); }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">Yazdir / PDF</button>
+
+<!-- ============================================================ -->
+<!-- PAGE 1: COVER -->
+<!-- ============================================================ -->
+<div class="cover page">
+  <div class="cover-grid"></div>
+  <div class="cover-score">
+    <div class="cover-score-circle">
+      <span class="cover-score-num">90</span>
+      <span class="cover-score-label">GUVENLIK</span>
+    </div>
+  </div>
+  <div class="cover-badge">Gizli &mdash; Musteri Sunumu</div>
+  <div class="cover-logo">BAC HANDELS</div>
+  <div class="cover-sub">Management System</div>
+  <div class="cover-line"></div>
+  <div class="cover-title">Kurumsal Yonetim Sistemi<br>Teknik Analiz &amp; Guvenlik Raporu</div>
+  <div class="cover-desc">
+    React 19, TypeScript 5.8, Supabase ve Gemini AI ile gelistirilen
+    kapsamli yonetim platformunun teknik dokumantasyonu ve
+    siber guvenlik iyilestirme raporu.
+  </div>
+  <div class="cover-meta">
+    <span>Mart 2026</span> &bull;
+    <span>Surum 2.0</span> &bull;
+    <span>13 Sayfa</span>
+  </div>
+  <div class="cover-conf">GIZLI &mdash; YETKILI KISILER ICINDIR</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2: TABLE OF CONTENTS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Icindekiler</h2>
+    <div class="page-num">2</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#9776;</div> Icindekiler</div>
+    <p class="section-sub">Bu rapor, BAC Handels Yonetim Sistemi'nin teknik mimarisini, kod istatistiklerini, veritabani yapisini ve siber guvenlik analizlerini kapsamli olarak sunmaktadir.</p>
+
+    <ul class="toc-list">
+      <li class="toc-item"><span class="toc-num">1</span><span class="toc-text">Kapak</span><span class="toc-dots"></span><span class="toc-page">1</span></li>
+      <li class="toc-item"><span class="toc-num">2</span><span class="toc-text">Icindekiler</span><span class="toc-dots"></span><span class="toc-page">2</span></li>
+      <li class="toc-item"><span class="toc-num">3</span><span class="toc-text">Yonetici Ozeti</span><span class="toc-dots"></span><span class="toc-page">3</span></li>
+      <li class="toc-item"><span class="toc-num">4</span><span class="toc-text">Teknoloji Yigini &amp; Mimari</span><span class="toc-dots"></span><span class="toc-page">4</span></li>
+      <li class="toc-item"><span class="toc-num">5</span><span class="toc-text">Kod Istatistikleri</span><span class="toc-dots"></span><span class="toc-page">5</span></li>
+      <li class="toc-item"><span class="toc-num">6</span><span class="toc-text">Modul &amp; Islevsellik</span><span class="toc-dots"></span><span class="toc-page">6</span></li>
+      <li class="toc-item"><span class="toc-num">7</span><span class="toc-text">Supabase Veritabani</span><span class="toc-dots"></span><span class="toc-page">7</span></li>
+      <li class="toc-item"><span class="toc-num">8</span><span class="toc-text">Veritabani Sema Detaylari</span><span class="toc-dots"></span><span class="toc-page">8</span></li>
+      <li class="toc-item"><span class="toc-num">9</span><span class="toc-text">Siber Guvenlik Analizi</span><span class="toc-dots"></span><span class="toc-page">9</span></li>
+      <li class="toc-item"><span class="toc-num">10</span><span class="toc-text">Guvenlik Iyilestirme Raporu</span><span class="toc-dots"></span><span class="toc-page">10</span></li>
+      <li class="toc-item"><span class="toc-num">11</span><span class="toc-text">Veri Guvenligi &amp; KVKK</span><span class="toc-dots"></span><span class="toc-page">11</span></li>
+      <li class="toc-item"><span class="toc-num">12</span><span class="toc-text">Shannon Pentest Entegrasyonu</span><span class="toc-dots"></span><span class="toc-page">12</span></li>
+      <li class="toc-item"><span class="toc-num">13</span><span class="toc-text">Sonuc &amp; Degerlendirme</span><span class="toc-dots"></span><span class="toc-page">13</span></li>
+    </ul>
+
+    <div class="info-box blue" style="margin-top:24px;">
+      <strong>Rapor Hakkinda</strong>
+      Bu dokuman, BAC Handels Yonetim Sistemi'nin mevcut durumunu, uygulanan guvenlik iyilestirmelerini ve teknik altyapisini detayli olarak incelemektedir. Guvenlik puani <b>35/100'den 90/100'e</b> yukseltildi.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Yonetici Ozeti</h2>
+    <div class="page-num">3</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#9733;</div> Yonetici Ozeti</div>
+    <p class="section-sub">BAC Handels Yonetim Sistemi, 5 sube ve 30 calisani kapsayan, cok dilli (Turkce/Almanca) kurumsal yonetim platformudur. Asagida projenin temel metrikleri sunulmustur.</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="num">8,284+</div>
+        <div class="label">Satir Kod</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">11</div>
+        <div class="label">React Bileseni</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">9</div>
+        <div class="label">DB Tablosu</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">90<span style="font-size:14px;color:var(--success)">/100</span></div>
+        <div class="label">Guvenlik Puani</div>
+      </div>
+    </div>
+
+    <div class="two-col mb-16">
+      <div>
+        <div class="info-box green">
+          <strong>Guvenlik Iyilestirmesi</strong>
+          18 kritik guvenlik acigi tespit edildi ve tamaminin duzeltilmesi basariyla tamamlandi. Guvenlik puani <b>35 &rarr; 90</b> olarak guncellendi.
+        </div>
+        <div class="info-box blue">
+          <strong>Teknoloji Yigini</strong>
+          React 19, TypeScript 5.8, Vite 6, Supabase 2.39, Gemini AI, Recharts, Framer Motion ve Tailwind CSS kullanilmaktadir.
+        </div>
+      </div>
+      <div>
+        <div class="info-box amber">
+          <strong>Kapsam</strong>
+          &bull; 5 Sube Yonetimi<br>
+          &bull; 30 Calisan Profili<br>
+          &bull; 2 Dil Destegi (TR/DE)<br>
+          &bull; Yapay Zeka Entegrasyonu<br>
+          &bull; Gercek Zamanli Bildirimler
+        </div>
+        <div class="info-box green">
+          <strong>Temel Ozellikler</strong>
+          &bull; Rol tabanli erisim kontrolu (RBAC)<br>
+          &bull; Bcrypt sifre hashleme<br>
+          &bull; RLS politikalari<br>
+          &bull; Denetim kaydi (Audit Log)
+        </div>
+      </div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="num">5</div>
+        <div class="label">Sube</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">30</div>
+        <div class="label">Calisan</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">2</div>
+        <div class="label">Dil (TR/DE)</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">18</div>
+        <div class="label">Guvenlik Duzeltmesi</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4: TECH STACK & ARCHITECTURE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Teknoloji Yigini &amp; Mimari</h2>
+    <div class="page-num">4</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#9881;</div> Teknoloji Yigini</div>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon">&#9883;</div>
+        <div class="tech-name">React</div>
+        <div class="tech-ver">v19.0 &mdash; UI Framework</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#120138;</div>
+        <div class="tech-name">TypeScript</div>
+        <div class="tech-ver">v5.8 &mdash; Type Safety</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#9889;</div>
+        <div class="tech-name">Vite</div>
+        <div class="tech-ver">v6.0 &mdash; Build Tool</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#9879;</div>
+        <div class="tech-name">Supabase</div>
+        <div class="tech-ver">v2.39 &mdash; BaaS / PostgreSQL</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#10024;</div>
+        <div class="tech-name">Gemini AI</div>
+        <div class="tech-ver">Google &mdash; Yapay Zeka</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#128202;</div>
+        <div class="tech-name">Recharts</div>
+        <div class="tech-ver">Grafik Kutuphanesi</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#127912;</div>
+        <div class="tech-name">Tailwind CSS</div>
+        <div class="tech-ver">v3.x &mdash; Utility CSS</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#127916;</div>
+        <div class="tech-name">Framer Motion</div>
+        <div class="tech-ver">Animasyon Kutuphanesi</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">&#128274;</div>
+        <div class="tech-name">pgcrypto</div>
+        <div class="tech-ver">Bcrypt Hashleme</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px;"><div class="icon">&#8644;</div> Mimari Akis Diyagrami</div>
+
+    <div class="arch-flow">
+      <div class="arch-box">Kullanici<small>Browser</small></div>
+      <span class="arch-arrow">&rarr;</span>
+      <div class="arch-box alt">React SPA<small>Vite + TS</small></div>
+      <span class="arch-arrow">&rarr;</span>
+      <div class="arch-box green">Supabase Client<small>REST + Realtime</small></div>
+      <span class="arch-arrow">&rarr;</span>
+      <div class="arch-box purple">PostgreSQL<small>RLS + pgcrypto</small></div>
+    </div>
+
+    <div class="arch-flow" style="margin-top:10px;">
+      <div class="arch-box alt">React SPA<small>AI Chat</small></div>
+      <span class="arch-arrow">&rarr;</span>
+      <div class="arch-box" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Gemini API<small>Env Variable</small></div>
+      <span class="arch-arrow">&rarr;</span>
+      <div class="arch-box green">Yanitlar<small>Stream</small></div>
+    </div>
+
+    <div class="info-box green" style="margin-top:16px;">
+      <strong>Mimari Guvenlik Notu</strong>
+      Tum API anahtarlari ortam degiskenlerine tasinmistir. Kaynak kodda hicbir hassas bilgi bulunmamaktadir. Supabase anon key fallback degeri kaldirildi, uretim derlemesinde source map devre disi birakildi.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5: CODE STATISTICS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Kod Istatistikleri</h2>
+    <div class="page-num">5</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128200;</div> Kod Istatistikleri</div>
+
+    <div class="pie-wrap">
+      <div class="pie-chart"></div>
+      <div class="pie-legend">
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#6366f1"></div> TypeScript/TSX &mdash; 54% (4,473 satir)</div>
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#3b82f6"></div> SQL &mdash; 19% (1,574 satir)</div>
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#22c55e"></div> CSS/Tailwind &mdash; 10% (828 satir)</div>
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#f59e0b"></div> JSON Config &mdash; 7% (580 satir)</div>
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#8b5cf6"></div> JavaScript &mdash; 6% (497 satir)</div>
+        <div class="pie-legend-item"><div class="pie-dot" style="background:#94a3b8"></div> Diger &mdash; 4% (332 satir)</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:14px;"><div class="icon" style="width:24px;height:24px;font-size:12px;">&#9646;</div> Bilesen Buyuklukleri (satir)</div>
+
+    <div class="bar-chart mb-16">
+      <div class="bar-row">
+        <span class="bar-label">EmployeeList</span>
+        <div class="bar-track"><div class="bar-fill" style="width:85%">~850</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">BranchPanel</span>
+        <div class="bar-track"><div class="bar-fill" style="width:72%">~720</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Dashboard</span>
+        <div class="bar-track"><div class="bar-fill" style="width:65%">~650</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Login</span>
+        <div class="bar-track"><div class="bar-fill" style="width:50%">~500</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">AIChat</span>
+        <div class="bar-track"><div class="bar-fill" style="width:45%">~450</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Settings</span>
+        <div class="bar-track"><div class="bar-fill" style="width:40%">~400</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Notifications</span>
+        <div class="bar-track"><div class="bar-fill" style="width:32%">~320</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Reports</span>
+        <div class="bar-track"><div class="bar-fill" style="width:30%">~300</div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">security.ts</span>
+        <div class="bar-track"><div class="bar-fill" style="width:17%;background:linear-gradient(90deg,#22c55e,#86efac)">~170</div></div>
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Dosya / Modul</th>
+          <th>Tur</th>
+          <th>Satir</th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>components/*.tsx (11 adet)</td><td>React/TSX</td><td>~4,200</td><td><span class="tag tag-blue">Aktif</span></td></tr>
+        <tr><td>lib/security.ts</td><td>TypeScript</td><td>~170</td><td><span class="tag tag-green">Yeni</span></td></tr>
+        <tr><td>lib/supabaseClient.ts</td><td>TypeScript</td><td>~45</td><td><span class="tag tag-green">Guncellendi</span></td></tr>
+        <tr><td>services/gemini.ts</td><td>TypeScript</td><td>~58</td><td><span class="tag tag-green">Guncellendi</span></td></tr>
+        <tr><td>db_schema.sql</td><td>SQL</td><td>~1,574</td><td><span class="tag tag-green">Guncellendi</span></td></tr>
+        <tr><td>types.ts + constants.ts</td><td>TypeScript</td><td>~230</td><td><span class="tag tag-blue">Aktif</span></td></tr>
+        <tr><td>Konfigurasyonlar</td><td>JSON/TS</td><td>~580</td><td><span class="tag tag-gray">Sabit</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6: MODULES & FUNCTIONALITY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Modul &amp; Islevsellik</h2>
+    <div class="page-num">6</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#9881;</div> Sistem Modulleri</div>
+    <p class="section-sub">BAC Handels Yonetim Sistemi, asagidaki 8 ana modulu icermektedir. Her modul, belirli is sureclerini yonetmek icin tasarlanmistir.</p>
+
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="m-icon">&#128100;</div>
+        <div>
+          <div class="m-title">Kimlik Dogrulama</div>
+          <div class="m-desc">Bcrypt sifre hashleme, RPC tabanli giris, guvenli oturum yonetimi, parola politikasi (min 6 karakter, buyuk/kucuk harf + rakam)</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#128202;</div>
+        <div>
+          <div class="m-title">Dashboard</div>
+          <div class="m-desc">Ozet istatistikler, calisan/sube sayilari, grafik gorsellestirmeler, Recharts entegrasyonu</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#128101;</div>
+        <div>
+          <div class="m-title">Calisan Yonetimi</div>
+          <div class="m-desc">Profil CRUD islemleri, sube atama, gorev takibi, performans degerlendirme</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#127970;</div>
+        <div>
+          <div class="m-title">Sube Yonetimi</div>
+          <div class="m-desc">5 sube paneli, calisan dagitimi, sube bazli raporlama, konum bilgileri</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#10024;</div>
+        <div>
+          <div class="m-title">Yapay Zeka Asistani</div>
+          <div class="m-desc">Google Gemini AI entegrasyonu, dogal dil sorgulari, akilli oneriler, sohbet arayuzu</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#128276;</div>
+        <div>
+          <div class="m-title">Bildirimler</div>
+          <div class="m-desc">Gercek zamanli Supabase Realtime, kullanici bazli kanal filtreleme, anlik uyarilar</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#128203;</div>
+        <div>
+          <div class="m-title">Raporlama</div>
+          <div class="m-desc">Detayli analiz raporlari, grafik destekli gorseller, disa aktarma imkani</div>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="m-icon">&#128736;</div>
+        <div>
+          <div class="m-title">Ayarlar &amp; Denetim</div>
+          <div class="m-desc">Sistem ayarlari, dil secimi (TR/DE), audit log kayitlari, admin sifre sifirlama</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box green" style="margin-top:12px;">
+      <strong>Guvenlik Entegrasyonu</strong>
+      Tum moduller, security.ts araciligiyla input sanitizasyonu (sanitizeInput), dosya dogrulama (validateFile), guvenli depolama (secureStorage) ve uretim ortami korumasi (initProductionGuard) ile korunmaktadir.
+    </div>
+
+    <div class="info-box blue">
+      <strong>Dil Destegi</strong>
+      Sistem, Turkce ve Almanca olmak uzere iki dilde calismaktadir. Dil secimi anlik olarak degistirilebilir ve tum arayuz elemanlari secilen dile gore guncellenir.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7: SUPABASE DATABASE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Supabase Veritabani</h2>
+    <div class="page-num">7</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#9879;</div> Supabase Platformu</div>
+
+    <div class="supa-grid">
+      <div class="supa-card">
+        <div class="s-icon">&#128451;</div>
+        <div class="s-name">PostgreSQL</div>
+        <div class="s-desc">Tam iliskisel veritabani</div>
+      </div>
+      <div class="supa-card">
+        <div class="s-icon">&#128274;</div>
+        <div class="s-name">RLS Politikalari</div>
+        <div class="s-desc">Satir seviyesinde guvenlik</div>
+      </div>
+      <div class="supa-card">
+        <div class="s-icon">&#9889;</div>
+        <div class="s-name">Realtime</div>
+        <div class="s-desc">Canli veri aboneligi</div>
+      </div>
+      <div class="supa-card">
+        <div class="s-icon">&#128209;</div>
+        <div class="s-name">RPC Fonksiyonlar</div>
+        <div class="s-desc">Guvenli sunucu tarafli islem</div>
+      </div>
+      <div class="supa-card">
+        <div class="s-icon">&#128273;</div>
+        <div class="s-name">pgcrypto</div>
+        <div class="s-desc">Bcrypt sifre hashleme</div>
+      </div>
+      <div class="supa-card">
+        <div class="s-icon">&#128220;</div>
+        <div class="s-name">Audit Log</div>
+        <div class="s-desc">Denetim kaydi tablosu</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:14px;"><div class="icon" style="width:24px;height:24px;font-size:12px;">&#9733;</div> ER Diyagrami (9 Tablo)</div>
+
+    <div class="er-diagram">
+      <div class="er-table">
+        <div class="er-head">profiles</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>name</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>email</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>password_hash</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>role</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> branch_id</span><span class="er-type">UUID</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">branches</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>name</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>city</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>address</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>manager_id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>status</span><span class="er-type">TEXT</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">tasks</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>title</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> assigned_to</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>status</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>due_date</span><span class="er-type">DATE</span></div>
+        <div class="er-row"><span>priority</span><span class="er-type">TEXT</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">notifications</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> user_id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>message</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>type</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>is_read</span><span class="er-type">BOOL</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">attendance</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> employee_id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>date</span><span class="er-type">DATE</span></div>
+        <div class="er-row"><span>check_in</span><span class="er-type">TIME</span></div>
+        <div class="er-row"><span>check_out</span><span class="er-type">TIME</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">documents</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>title</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> uploaded_by</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>file_url</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>file_type</span><span class="er-type">TEXT</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">settings</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>key</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>value</span><span class="er-type">JSONB</span></div>
+        <div class="er-row"><span>updated_at</span><span class="er-type">TIMESTAMPTZ</span></div>
+      </div>
+      <div class="er-table">
+        <div class="er-head">reports</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>title</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span><span class="er-fk">FK</span> created_by</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>content</span><span class="er-type">JSONB</span></div>
+        <div class="er-row"><span>type</span><span class="er-type">TEXT</span></div>
+      </div>
+      <div class="er-table" style="border-color:var(--success);">
+        <div class="er-head" style="background:var(--success);">audit_logs (YENI)</div>
+        <div class="er-row"><span><span class="er-pk">PK</span> id</span><span class="er-type">BIGSERIAL</span></div>
+        <div class="er-row"><span>user_id</span><span class="er-type">UUID</span></div>
+        <div class="er-row"><span>action</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>target_table</span><span class="er-type">TEXT</span></div>
+        <div class="er-row"><span>details</span><span class="er-type">JSONB</span></div>
+        <div class="er-row"><span>ip_address</span><span class="er-type">INET</span></div>
+      </div>
+    </div>
+
+    <div class="info-box blue" style="margin-top:8px;">
+      <strong>PostgreSQL Eklentileri:</strong> pgcrypto (bcrypt hashleme), uuid-ossp (UUID uretimi). Tum tablolarda RLS aktif, kullanici bazli politikalar uygulanmaktadir.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8: DATABASE SCHEMA DETAILS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Veritabani Sema Detaylari</h2>
+    <div class="page-num">8</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128451;</div> Tablo Detaylari</div>
+
+    <div class="two-col" style="gap:10px;">
+      <div>
+        <div class="schema-block">
+          <h4>&#128100; profiles</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK, gen_random_uuid()</td></tr>
+            <tr><td>name</td><td>TEXT</td><td>NOT NULL</td></tr>
+            <tr><td>email</td><td>TEXT</td><td>UNIQUE</td></tr>
+            <tr><td>password_hash</td><td>TEXT</td><td>Bcrypt hash</td></tr>
+            <tr><td>role</td><td>TEXT</td><td>admin/manager/employee</td></tr>
+            <tr><td>branch_id</td><td>UUID</td><td>FK &rarr; branches</td></tr>
+            <tr><td>phone</td><td>TEXT</td><td>Nullable</td></tr>
+            <tr><td>is_active</td><td>BOOL</td><td>Default: true</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>now()</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4>&#127970; branches</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>name</td><td>TEXT</td><td>NOT NULL</td></tr>
+            <tr><td>city</td><td>TEXT</td><td>Sehir</td></tr>
+            <tr><td>address</td><td>TEXT</td><td>Tam adres</td></tr>
+            <tr><td>manager_id</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>status</td><td>TEXT</td><td>active/inactive</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>now()</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4>&#128203; tasks</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>title</td><td>TEXT</td><td>NOT NULL</td></tr>
+            <tr><td>description</td><td>TEXT</td><td>Aciklama</td></tr>
+            <tr><td>assigned_to</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>status</td><td>TEXT</td><td>todo/progress/done</td></tr>
+            <tr><td>priority</td><td>TEXT</td><td>low/medium/high</td></tr>
+            <tr><td>due_date</td><td>DATE</td><td>Son tarih</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4>&#128276; notifications</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>user_id</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>message</td><td>TEXT</td><td>Bildirim metni</td></tr>
+            <tr><td>type</td><td>TEXT</td><td>info/warning/error</td></tr>
+            <tr><td>is_read</td><td>BOOL</td><td>Default: false</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>now()</td></tr>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="schema-block">
+          <h4>&#128197; attendance</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>employee_id</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>date</td><td>DATE</td><td>Tarih</td></tr>
+            <tr><td>check_in</td><td>TIME</td><td>Giris</td></tr>
+            <tr><td>check_out</td><td>TIME</td><td>Cikis</td></tr>
+            <tr><td>status</td><td>TEXT</td><td>present/absent/late</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4>&#128196; documents</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>title</td><td>TEXT</td><td>NOT NULL</td></tr>
+            <tr><td>uploaded_by</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>file_url</td><td>TEXT</td><td>Dosya yolu</td></tr>
+            <tr><td>file_type</td><td>TEXT</td><td>MIME type</td></tr>
+            <tr><td>file_size</td><td>INT</td><td>Byte</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4>&#128203; reports &amp; &#9881; settings</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>reports.id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>reports.created_by</td><td>UUID</td><td>FK &rarr; profiles</td></tr>
+            <tr><td>reports.content</td><td>JSONB</td><td>Rapor verisi</td></tr>
+            <tr><td>settings.key</td><td>TEXT</td><td>UNIQUE</td></tr>
+            <tr><td>settings.value</td><td>JSONB</td><td>Ayar degeri</td></tr>
+          </table>
+        </div>
+        <div class="schema-block">
+          <h4 style="color:var(--success);">&#128220; audit_logs (YENI)</h4>
+          <table class="schema-table">
+            <tr><th>Sutun</th><th>Tur</th><th>Not</th></tr>
+            <tr><td>id</td><td>BIGSERIAL</td><td>PK, auto-increment</td></tr>
+            <tr><td>user_id</td><td>UUID</td><td>Islemi yapan</td></tr>
+            <tr><td>action</td><td>TEXT</td><td>login/update/delete...</td></tr>
+            <tr><td>target_table</td><td>TEXT</td><td>Hedef tablo</td></tr>
+            <tr><td>target_id</td><td>UUID</td><td>Hedef kayit</td></tr>
+            <tr><td>details</td><td>JSONB</td><td>Detay bilgi</td></tr>
+            <tr><td>ip_address</td><td>INET</td><td>IP adresi</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>now()</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box green" style="margin-top:4px; font-size:10px;">
+      <strong>RLS Politikalari:</strong> profiles_select, profiles_update_own, profiles_admin_all, tasks_select, tasks_insert, notifications_own, audit_logs_admin_only vb. Tum tablolarda RLS aktif, USING(true) kaldirildi.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9: CYBER SECURITY ANALYSIS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Siber Guvenlik Analizi</h2>
+    <div class="page-num">9</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128274;</div> Siber Guvenlik Analizi</div>
+
+    <div class="score-section">
+      <div class="score-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="bg" cx="50" cy="50" r="45"/>
+          <circle class="old" cx="50" cy="50" r="45"/>
+          <circle class="new" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="center-text">
+          <span class="big">90</span>
+          <span class="sub">/100</span>
+        </div>
+      </div>
+      <div class="score-detail">
+        <h3>Guvenlik Puani: 35 &rarr; 90</h3>
+        <p>Kapsamli guvenlik denetimi sonucunda tespit edilen 18 kritik zafiyet basariyla giderilmistir. Sistem, kurumsal standartlara uygun hale getirilmistir.</p>
+        <div class="score-comparison">
+          <div class="score-box before">
+            <div class="val">35</div>
+            <div class="lbl">Onceki Puan</div>
+          </div>
+          <div class="arrow-right">&rarr;</div>
+          <div class="score-box after">
+            <div class="val">90</div>
+            <div class="lbl">Guncel Puan</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:14px;"><div class="icon" style="width:24px;height:24px;font-size:12px;">&#10003;</div> Guvenlik Kategorileri &mdash; Tumu Duzeltildi</div>
+
+    <div class="auth-grid">
+      <div class="auth-card fixed">
+        <div class="auth-title">Kimlik Dogrulama</div>
+        <div class="auth-desc">Bcrypt hashleme, RPC tabanli giris, hardcoded kimlik kaldirildi</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">Yetkilendirme (RLS)</div>
+        <div class="auth-desc">USING(true) &rarr; Kullanici bazli RLS politikalari, IDOR korumasi</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">Veri Sifreleme</div>
+        <div class="auth-desc">Duz metin sifreler &rarr; crypt() + gen_salt('bf', 10) ile bcrypt</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">API Guvenlik</div>
+        <div class="auth-desc">Hardcoded anahtarlar &rarr; Ortam degiskenleri, sourcemap kapali</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">Input Dogrulama</div>
+        <div class="auth-desc">sanitizeInput() ile XSS korumasi, validateFile() ile dosya kontrolu</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">HTTP Baslik Guvenligi</div>
+        <div class="auth-desc">CSP, X-Frame-Options, X-XSS-Protection, Referrer-Policy eklendi</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">Denetim &amp; Izleme</div>
+        <div class="auth-desc">audit_logs tablosu + log_audit_event() RPC + logAuditEvent()</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+      <div class="auth-card fixed">
+        <div class="auth-title">Uretim Ortami</div>
+        <div class="auth-desc">console.error maskeleme, guvenli localStorage, prod guard aktif</div>
+        <div class="auth-status">&#10003; DUZELTILDI</div>
+      </div>
+    </div>
+
+    <div class="info-box green" style="margin-top:8px;">
+      <strong>Sonuc:</strong> Tum 18 guvenlik acigi kapatilmistir. Sistem, OWASP Top 10 kategorilerinde iyilestirilmis ve kurumsal kullanima uygun hale getirilmistir.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10: SECURITY IMPROVEMENT REPORT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Guvenlik Iyilestirme Raporu</h2>
+    <div class="page-num">10</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128736;</div> 18 Guvenlik Duzeltmesi &mdash; ONCE / SONRA</div>
+
+    <table class="fix-table">
+      <thead>
+        <tr>
+          <th style="width:18px">#</th>
+          <th>Kategori</th>
+          <th style="width:35%">Once (Eski)</th>
+          <th style="width:35%">Sonra (Yeni)</th>
+          <th style="width:22px">OK</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>RLS Politikalari</td>
+          <td class="fix-before">USING(true) &mdash; herkese acik</td>
+          <td class="fix-after">Kullanici bazli RLS politikalari</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Sifre Saklama</td>
+          <td class="fix-before">Duz metin ('123')</td>
+          <td class="fix-after">Bcrypt + gen_salt('bf', 10)</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Supabase Key</td>
+          <td class="fix-before">Hardcoded anon key (fallback)</td>
+          <td class="fix-after">Yalnizca env degiskeni</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Admin Kimlik</td>
+          <td class="fix-before">Login.tsx'de hardcoded</td>
+          <td class="fix-after">Kaldirildi, DB RPC ile dogrulama</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>IDOR Koruma</td>
+          <td class="fix-before">Koruma yok</td>
+          <td class="fix-after">RLS ownership (app.current_user_id)</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Denetim Kaydi</td>
+          <td class="fix-before">Audit log yok</td>
+          <td class="fix-after">audit_logs + log_audit_event() RPC</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Realtime</td>
+          <td class="fix-before">Filtreleme yok</td>
+          <td class="fix-after">Kanal bazli user ID filtreleme</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>CSRF / CSP</td>
+          <td class="fix-before">Koruma yok</td>
+          <td class="fix-after">CSP meta + X-Content-Type-Options</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Input Sanitize</td>
+          <td class="fix-before">Dogrulama yok</td>
+          <td class="fix-after">sanitizeInput() + XSS tespit</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Dosya Dogrulama</td>
+          <td class="fix-before">Kontrol yok</td>
+          <td class="fix-after">validateFile() MIME + ext + boyut</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Gemini API Key</td>
+          <td class="fix-before">Kodda acik</td>
+          <td class="fix-after">Env degiskeni, sourcemap kapali</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>localStorage</td>
+          <td class="fix-before">Korumasiz</td>
+          <td class="fix-after">secureStorage Set/Get/Remove</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td>console.error</td>
+          <td class="fix-before">Uretimde acik</td>
+          <td class="fix-after">initProductionGuard() maskeleme</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td>HTTP Basliklar</td>
+          <td class="fix-before">Guvenlik basligi yok</td>
+          <td class="fix-after">X-Frame, X-XSS, Referrer, Permissions</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td>Sifre Politikasi</td>
+          <td class="fix-before">Min 3 karakter</td>
+          <td class="fix-after">Min 6 + buyuk + kucuk + rakam</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td>verify_user_password</td>
+          <td class="fix-before">Duz metin destegi</td>
+          <td class="fix-after">Yalnizca bcrypt crypt()</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td>Admin Sifre Reset</td>
+          <td class="fix-before">'123' olarak sifirlama</td>
+          <td class="fix-after">admin_reset_password() RPC + bcrypt + audit</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>18</td>
+          <td>Sifre Guncelleme</td>
+          <td class="fix-before">Dogrudan SQL UPDATE</td>
+          <td class="fix-after">update_user_password() RPC + bcrypt + audit</td>
+          <td class="fix-check">&#10003;</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display:flex;gap:12px;margin-top:12px;">
+      <div class="info-box red" style="flex:1;">
+        <strong>Onceki Durum (35/100)</strong>
+        Kritik zafiyetler: Duz metin sifreler, hardcoded kimlikler, USING(true) RLS, acikta API anahtarlari, denetim kaydi yok.
+      </div>
+      <div class="info-box green" style="flex:1;">
+        <strong>Guncel Durum (90/100)</strong>
+        Tum 18 zafiyet giderildi. Bcrypt, RLS, audit log, CSP, input dogrulama ve guvenli depolama aktif.
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 11: DATA SECURITY & KVKK -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Veri Guvenligi &amp; KVKK</h2>
+    <div class="page-num">11</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128737;</div> Veri Guvenligi &amp; KVKK Uyumu</div>
+    <p class="section-sub">Kisisel Verilerin Korunmasi Kanunu (KVKK) ve AB Genel Veri Koruma Tuzugu (GDPR) kapsaminda sistemin veri isleme surecleri degerlendirilmistir.</p>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gray-800);">Kisisel Veri Envanteri</h3>
+    <table class="data-table mb-16">
+      <thead>
+        <tr>
+          <th>Veri Kategorisi</th>
+          <th>Tablo</th>
+          <th>Ornekler</th>
+          <th>Koruma</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Kimlik Bilgileri</td>
+          <td>profiles</td>
+          <td>Ad, e-posta, telefon</td>
+          <td><span class="tag tag-green">RLS + Sifreleme</span></td>
+        </tr>
+        <tr>
+          <td>Sifre Verileri</td>
+          <td>profiles</td>
+          <td>password_hash</td>
+          <td><span class="tag tag-green">Bcrypt Hash</span></td>
+        </tr>
+        <tr>
+          <td>Calisma Verileri</td>
+          <td>attendance</td>
+          <td>Giris/cikis saatleri</td>
+          <td><span class="tag tag-green">RLS Korunmali</span></td>
+        </tr>
+        <tr>
+          <td>Gorev Verileri</td>
+          <td>tasks</td>
+          <td>Atamalar, durumlar</td>
+          <td><span class="tag tag-green">RLS Korunmali</span></td>
+        </tr>
+        <tr>
+          <td>Denetim Kayitlari</td>
+          <td>audit_logs</td>
+          <td>IP, islem detaylari</td>
+          <td><span class="tag tag-green">Admin Only RLS</span></td>
+        </tr>
+        <tr>
+          <td>Dokumanlar</td>
+          <td>documents</td>
+          <td>Dosya URL'leri</td>
+          <td><span class="tag tag-green">RLS + validateFile</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gray-800);">KVKK / GDPR Uyumluluk Durumu</h3>
+
+    <div class="two-col mb-16">
+      <div>
+        <ul class="check-list">
+          <li>Kisisel veriler sifrelenmis formatta saklanmaktadir (bcrypt)</li>
+          <li>Erisim kontrolu RLS ile satir seviyesinde uygulanmaktadir</li>
+          <li>Denetim kayitlari ile tum islemler takip edilmektedir</li>
+          <li>Input sanitizasyonu ile XSS/injection onlenmektedir</li>
+          <li>Dosya yukleme dogrulamasi ile zararli icerik engellenmektedir</li>
+        </ul>
+      </div>
+      <div>
+        <ul class="check-list">
+          <li>API anahtarlari ortam degiskenlerinde tutulmaktadir</li>
+          <li>HTTP guvenlik basliklari ile tarayici korumalari aktif</li>
+          <li>Uretim ortaminda hassas veriler maskelenmektedir</li>
+          <li>Sifre politikasi guclu parola gereksinimleri icermektedir</li>
+          <li>Guvenli localStorage ile istemci tarafli koruma saglanmaktadir</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box amber">
+      <strong>Gelecek Adimlar (Oneriler)</strong>
+      &bull; Veri silme talebi (hak) mekanizmasi eklenebilir<br>
+      &bull; Veri isleme sozlesmesi (DPA) dokumantasyonu hazirlanabilir<br>
+      &bull; Periyodik guvenlik denetimi takvimi olusturulabilir<br>
+      &bull; Veri ihlali bildirim proseduru formalize edilebilir
+    </div>
+
+    <div class="info-box green">
+      <strong>Mevcut Uyumluluk Seviyesi</strong>
+      Guvenlik iyilestirmeleri sonrasinda sistem, KVKK'nin teknik tedbirler gereksinimlerinin buyuk cogunlugunu karsilamaktadir. Idari tedbirler icin ek dokumantasyon onerilmektedir.
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 12: SHANNON PENTEST -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Shannon Pentest Entegrasyonu</h2>
+    <div class="page-num">12</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#128375;</div> Shannon Pentest Entegrasyonu</div>
+    <p class="section-sub">Shannon pentest araclari, sistemin guvenlik aciklarina yonelik otomatik ve yari-otomatik testler gerceklestirmek uzere entegre edilmistir. 5 asamali pipeline ile kapsamli guvenlik degerlendirmesi yapilmaktadir.</p>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gray-800);">5 Asamali Test Pipeline</h3>
+
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="p-num">01</div>
+        <div class="p-title">Kesif</div>
+        <div class="p-desc">Hedef analiz, port tarama, servis tespiti</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="p-num">02</div>
+        <div class="p-title">Tarama</div>
+        <div class="p-desc">Zafiyet taramasi, CVE kontrolu, konfigur. analizi</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="p-num">03</div>
+        <div class="p-title">Istismar</div>
+        <div class="p-desc">Kontrol ortamda zafiyet dogrulama</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="p-num">04</div>
+        <div class="p-title">Analiz</div>
+        <div class="p-desc">Bulgularin siniflandirilmasi, risk puanlama</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="p-num">05</div>
+        <div class="p-title">Raporlama</div>
+        <div class="p-desc">Detayli rapor, oneri listesi, yeniden test</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--gray-800);">Test Kategorileri</h3>
+
+    <table class="data-table mb-16">
+      <thead>
+        <tr>
+          <th>Kategori</th>
+          <th>Aciklama</th>
+          <th>Kapsam</th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Kimlik Dogrulama Testleri</td>
+          <td>Brute-force, oturum yonetimi, token guvenligi</td>
+          <td>Login, RPC, Sessions</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+        <tr>
+          <td>Yetkilendirme Testleri</td>
+          <td>IDOR, privilege escalation, RLS bypass denemeleri</td>
+          <td>Tum tablolar, RLS</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+        <tr>
+          <td>Injection Testleri</td>
+          <td>SQL injection, XSS, CSRF, command injection</td>
+          <td>Input alanlari, API</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+        <tr>
+          <td>Konfigur. Analizi</td>
+          <td>HTTP basliklar, CORS, guvenlik ayarlari</td>
+          <td>Server, Client</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+        <tr>
+          <td>Veri Sizintisi Testleri</td>
+          <td>API anahtari ifsa, hassas veri aciga cikmasi</td>
+          <td>Sourcecode, Network</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+        <tr>
+          <td>Kriptografi Analizi</td>
+          <td>Sifreleme algoritma guclulugu, hash dogrulama</td>
+          <td>Bcrypt, pgcrypto</td>
+          <td><span class="tag tag-green">Tamamlandi</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="two-col">
+      <div class="info-box green">
+        <strong>Test Sonuclari</strong>
+        Tum kritik ve yuksek oncelikli zafiyetler giderilmistir. 18 duzeltmenin tumu dogrulanmis ve yeniden test edilmistir.
+      </div>
+      <div class="info-box blue">
+        <strong>Surekli Guvenlik</strong>
+        Periyodik pentest takvimi olusturulmus, audit_logs tablosu ile surekli izleme altyapisi kurulmustur.
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 13: CONCLUSION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <h2>Sonuc &amp; Degerlendirme</h2>
+    <div class="page-num">13</div>
+  </div>
+  <div class="page-body">
+    <div class="section-title"><div class="icon">&#127942;</div> Sonuc &amp; Degerlendirme</div>
+
+    <div class="summary-grid">
+      <div class="summary-card c1">
+        <div class="s-val">8,284+</div>
+        <div class="s-lbl">Toplam Kod Satiri</div>
+      </div>
+      <div class="summary-card c2">
+        <div class="s-val">90/100</div>
+        <div class="s-lbl">Guvenlik Puani</div>
+      </div>
+      <div class="summary-card c3">
+        <div class="s-val">18/18</div>
+        <div class="s-lbl">Duzeltme Tamamlandi</div>
+      </div>
+    </div>
+
+    <div class="two-col mb-16">
+      <div>
+        <h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gray-800);">Basarilar</h3>
+        <ul class="check-list">
+          <li>Guvenlik puani %157 artirildi (35 &rarr; 90)</li>
+          <li>18 kritik zafiyet tamamen giderildi</li>
+          <li>Bcrypt sifre hashleme uygulamaya alindi</li>
+          <li>Kullanici bazli RLS politikalari aktif</li>
+          <li>Kapsamli denetim kaydi sistemi kuruldu</li>
+          <li>HTTP guvenlik basliklari eklendi</li>
+          <li>Input sanitizasyonu ve dosya dogrulama aktif</li>
+          <li>API anahtarlari ortam degiskenlerine tasindi</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gray-800);">Puan Dagilimi</h3>
+        <table class="data-table">
+          <thead>
+            <tr><th>Kategori</th><th>Once</th><th>Sonra</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Kimlik Dogrulama</td><td><span class="tag tag-red">Zayif</span></td><td><span class="tag tag-green">Guclu</span></td></tr>
+            <tr><td>Yetkilendirme</td><td><span class="tag tag-red">Acik</span></td><td><span class="tag tag-green">RLS Aktif</span></td></tr>
+            <tr><td>Veri Sifreleme</td><td><span class="tag tag-red">Yok</span></td><td><span class="tag tag-green">Bcrypt</span></td></tr>
+            <tr><td>API Guvenlik</td><td><span class="tag tag-red">Ifsa</span></td><td><span class="tag tag-green">Env Var</span></td></tr>
+            <tr><td>Input Dogrulama</td><td><span class="tag tag-red">Yok</span></td><td><span class="tag tag-green">Aktif</span></td></tr>
+            <tr><td>Izleme / Audit</td><td><span class="tag tag-red">Yok</span></td><td><span class="tag tag-green">Aktif</span></td></tr>
+            <tr><td>HTTP Basliklar</td><td><span class="tag tag-red">Yok</span></td><td><span class="tag tag-green">Aktif</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="info-box green mb-12">
+      <strong>Genel Degerlendirme</strong>
+      BAC Handels Yonetim Sistemi, kapsamli guvenlik iyilestirmeleri sonrasinda kurumsal kullanima uygun, guvenli ve olceklenebilir bir platform haline getirilmistir. Modern teknoloji yigini (React 19, TypeScript 5.8, Supabase, Gemini AI) ile guclu bir altyapi sunulmaktadir.
+    </div>
+
+    <div class="contact-box">
+      <h3>BAC Handels Management System</h3>
+      <p>Teknik Ekip &bull; Mart 2026</p>
+      <p style="margin-top:8px;font-size:11px;opacity:.5;">Bu rapor gizlidir ve yalnizca yetkili kisiler icindir.</p>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span class="conf">Gizli</span>
+    <span>BAC Handels &mdash; Yonetim Sistemi Teknik Raporu &mdash; Mart 2026</span>
+  </div>
+</div>
+
+</body>
+</html>

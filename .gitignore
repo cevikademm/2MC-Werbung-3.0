@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.local
+.env.*
+!.env.example
+
+# Supabase CLI temp ve linked-project bilgisi
+supabase/.temp/
+
+# Claude Code lokal kilit dosyası
+.claude/scheduled_tasks.lock
+
+# Lokal logo dosyaları (Storage'a yüklendi, repo'ya gerek yok)
+logo_werbung*.png
+logo_2mc_preview.png
+
+# Large output files
+grep_output.txt
+output.txt
+
+# Shannon Pentest
+shannon/reports/
+shannon/.app_pid
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.vercel

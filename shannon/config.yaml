@@ -1,0 +1,93 @@
+# Shannon Pentest Configuration for BAC Handels
+# Kurumsal Yonetim Uygulamasi - Guvenlik Testi Ayarlari
+
+name: bac-handels-pentest
+description: BAC Handels Kurumsal Yonetim Uygulamasi Guvenlik Testi
+
+# Hedef uygulama ayarlari
+target:
+  url: "http://host.docker.internal:3000"
+  # Eger deploy edilmis bir ortam varsa asagidaki URL'yi kullanin:
+  # url: "https://your-production-url.com"
+
+# Kaynak kod dizini (container icindeki path)
+source:
+  repo: "bac-handels"
+  language: "typescript"
+  framework: "react"
+
+# Kimlik dogrulama ayarlari
+authentication:
+  enabled: true
+  type: "form"
+  login_url: "/login"
+  credentials:
+    # Admin hesabi
+    - username: "cevikademm@gmail.com"
+      password: "Adem123"
+      role: "admin"
+    # Personel hesabi
+    - username: "lada.dom@bac.com"
+      password: "123"
+      role: "staff"
+  form_fields:
+    username_field: "email"
+    password_field: "password"
+
+# Supabase API endpoint'leri
+api:
+  base_url: "https://xbbzwitvlrdwnoushgpf.supabase.co"
+  endpoints:
+    - path: "/rest/v1/profiles"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/time_logs"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/tasks"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/messages"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/calendar_events"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/shift_schedules"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/sales_logs"
+      methods: ["GET", "POST", "PATCH", "DELETE"]
+      auth_required: true
+    - path: "/rest/v1/app_settings"
+      methods: ["GET", "POST", "PATCH"]
+      auth_required: true
+    - path: "/rest/v1/rpc/verify_user_password"
+      methods: ["POST"]
+      auth_required: false
+
+# Test kategorileri - hangi testler calistirilacak
+testing:
+  categories:
+    injection: true        # SQL injection, NoSQL injection, command injection
+    xss: true              # Cross-site scripting
+    ssrf: true             # Server-side request forgery
+    authentication: true   # Auth bypass, brute force, session management
+    authorization: true    # Privilege escalation, IDOR, access control
+
+  # Ozel odak alanlari
+  focus_areas:
+    - "Supabase RLS policy bypass - tum tablolarda RLS USING(true) ile acik"
+    - "Duz metin sifre saklama - profiles tablosunda password kolonu"
+    - "Anon key frontend'de acik - client-side Supabase key"
+    - "verify_user_password RPC fonksiyonu - SQL injection kontrolu"
+    - "IDOR - Baska kullanicilarin verilerine erisim kontrolu"
+    - "XSS - Kullanici girdileri (mesajlar, gorevler, aciklamalar)"
+    - "Admin panel erisim kontrolu - role bazli yetkilendirme"
+
+# Raporlama
+reporting:
+  format: "markdown"
+  output_dir: "./shannon/reports"
+  include_poc: true
+  severity_threshold: "low"  # low, medium, high, critical

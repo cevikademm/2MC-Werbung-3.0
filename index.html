@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- PWA & Mobile Fullscreen Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#09090b">
+    <!-- GÜVENLİK: Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' https:; frame-ancestors 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Browser Tab & Shortcut Icons (Updated to Specific Supabase Image) -->
+    <link rel="icon" type="image/png" href="https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png">
+    <link rel="shortcut icon" type="image/png" href="https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png">
+    <link rel="apple-touch-icon" href="https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png">
+
+    <title>2MC Werbung - Kurumsal Yönetim</title>
+
+    <!-- Tema FOUC önleme: React mount'tan önce localStorage'dan oku -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('app_theme');
+          var html = document.documentElement;
+          if (stored === 'light') {
+            html.classList.remove('dark');
+            html.classList.add('light');
+          }
+        } catch (e) { /* localStorage erişilemez — dark default kalır */ }
+      })();
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              zinc: {
+                850: '#1f1f22',
+                900: '#18181b',
+                950: '#09090b',
+              },
+              primary: {
+                500: '#6366f1', // Indigo (dark tema primary — korunur)
+                600: '#4f46e5',
+              },
+              // 2MC Werbung marka paleti — logodan çıkarılan indigo/mavi tonlar.
+              brand: {
+                50:  '#f5f8fd', // çok açık mavi-beyaz — yüzey
+                100: '#e8f0fa', // mavi-beyaz — kart kenarı, badge fon
+                200: '#cfddf0', // soft mavi — divider
+                300: '#a8c6e8', // marka buz mavisi
+                400: '#5078b8', // marka orta mavi
+                500: '#3a4d9e', // ara indigo
+                600: '#262870', // ANA MARKA İNDİGO
+                700: '#3a3f8e', // hover/orta vurgu
+                800: '#1a1d52', // marka koyu
+                900: '#0d0f3a', // en koyu
+                mint: '#cbeef3', // aksent buz mavisi (info ton)
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #09090b; /* Zinc-950 */
+        color: #e4e4e7; /* Zinc-200 */
+        /* Dynamic Viewport Height for Mobile Browsers
+           - 100vh fallback: Samsung Internet eski sürümler ve dvh desteği olmayanlar için.
+           - 100dvh: modern Chrome/Safari/Firefox. Adres çubuğu açılırken ekran daralmaz. */
+        height: 100vh;
+        height: 100dvh;
+        width: 100vw;
+        overflow: hidden; /* App-like feel */
+        overscroll-behavior: none; /* Prevent elastic scrolling/pull-to-refresh */
+        -webkit-user-select: none; /* Prevent text selection */
+        user-select: none;
+        -webkit-tap-highlight-color: transparent; /* Remove blue tap highlight */
+      }
+      /* Uygulama kabuğu: cross-browser tam ekran. Tailwind arbitrary [height:100dvh]
+         eski Samsung Internet'te invalid kuralı atlatamadığı için CSS cascade ile
+         iki kuralı yan yana yazıyoruz: 100dvh tanımsızsa 100vh devrede kalır. */
+      .app-shell {
+        height: 100vh;
+        height: 100dvh;
+      }
+      input, textarea, [contenteditable] {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      #root {
+        height: 100%;
+        width: 100%;
+      }
+      /* Custom Scrollbar for Dark Theme */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #09090b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #27272a;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3f3f46;
+      }
+      .glass-panel {
+        background: rgba(24, 24, 27, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      /* Safe Area for iPhones */
+      .pb-safe {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+      }
+
+      /* WhatsApp destek FAB — mobilde bottom-nav (h-16 + 12px + safe-area)
+         üstünde durur, desktop'ta normal alt-sağ köşede. */
+      .whatsapp-fab {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+      }
+      @media (min-width: 768px) {
+        .whatsapp-fab {
+          bottom: 1.5rem;
+        }
+      }
+
+      /* =============================================================
+         DASHBOARD SCI-FI DARK TEMA — sadece html.dark + .dashboard-scifi
+         Referans: WhatsApp Image (Data Visualization) — koyu lacivert
+         arka plan, siyan glow accent'ler, HUD corner ornaments.
+         Sadece "Panel" sekmesini kapsar; diğer sayfalar etkilenmez.
+         ============================================================= */
+      html.dark .dashboard-scifi {
+        background:
+          radial-gradient(60% 80% at 50% 0%, rgba(6, 182, 212, 0.10) 0%, transparent 60%),
+          radial-gradient(80% 60% at 100% 100%, rgba(99, 102, 241, 0.10) 0%, transparent 60%),
+          linear-gradient(180deg, #050a1a 0%, #0a1638 50%, #020610 100%) !important;
+      }
+      /* Hafif grid texture — siyber HUD görünümü */
+      html.dark .dashboard-scifi::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+        -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+        z-index: 0;
+      }
+      html.dark .dashboard-scifi > * { position: relative; z-index: 1; }
+
+      /* --- Yüzeyler: zinc-900 → koyu lacivert --- */
+      html.dark .dashboard-scifi .bg-zinc-900,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900 { background-color: rgba(10, 22, 56, 0.7) !important; }
+      html.dark .dashboard-scifi .bg-zinc-900\/20,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900\/20 { background-color: rgba(10, 22, 56, 0.3) !important; }
+      html.dark .dashboard-scifi .bg-zinc-900\/30,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900\/30 { background-color: rgba(10, 22, 56, 0.4) !important; }
+      html.dark .dashboard-scifi .bg-zinc-900\/40,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900\/40 { background-color: rgba(10, 22, 56, 0.5) !important; }
+      html.dark .dashboard-scifi .bg-zinc-900\/50,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900\/50 { background-color: rgba(10, 22, 56, 0.6) !important; }
+      html.dark .dashboard-scifi .bg-zinc-900\/60,
+      html.dark .dashboard-scifi .dark\:bg-zinc-900\/60 { background-color: rgba(10, 22, 56, 0.7) !important; }
+      html.dark .dashboard-scifi .bg-zinc-800,
+      html.dark .dashboard-scifi .dark\:bg-zinc-800 { background-color: rgba(15, 32, 76, 0.85) !important; }
+      html.dark .dashboard-scifi .bg-zinc-800\/50,
+      html.dark .dashboard-scifi .bg-zinc-800\/80 { background-color: rgba(15, 32, 76, 0.5) !important; }
+      html.dark .dashboard-scifi .bg-zinc-950,
+      html.dark .dashboard-scifi .dark\:bg-zinc-950 { background-color: rgba(5, 10, 26, 0.9) !important; }
+
+      /* --- Borders: zinc → cyan glow --- */
+      html.dark .dashboard-scifi .border-zinc-800,
+      html.dark .dashboard-scifi .dark\:border-zinc-800 { border-color: rgba(34, 211, 238, 0.18) !important; }
+      html.dark .dashboard-scifi .border-zinc-800\/30 { border-color: rgba(34, 211, 238, 0.12) !important; }
+      html.dark .dashboard-scifi .border-zinc-800\/50 { border-color: rgba(34, 211, 238, 0.15) !important; }
+      html.dark .dashboard-scifi .border-zinc-800\/80 { border-color: rgba(34, 211, 238, 0.2) !important; }
+      html.dark .dashboard-scifi .border-zinc-700,
+      html.dark .dashboard-scifi .dark\:border-zinc-700 { border-color: rgba(34, 211, 238, 0.3) !important; }
+
+      /* --- Kartlara siyan iç çizgi + dış glow --- */
+      html.dark .dashboard-scifi .rounded-3xl.border,
+      html.dark .dashboard-scifi .rounded-2xl.border {
+        box-shadow:
+          inset 0 1px 0 rgba(34, 211, 238, 0.08),
+          0 0 24px rgba(6, 182, 212, 0.06);
+      }
+
+      /* --- HUD corner ornaments — her .rounded-3xl kartın köşelerinde
+             ince siyan dikey/yatay çubuklar. Light modda görünmez. --- */
+      html.dark .dashboard-scifi .rounded-3xl {
+        position: relative;
+      }
+      html.dark .dashboard-scifi .rounded-3xl::after {
+        content: '';
+        position: absolute;
+        inset: 8px;
+        pointer-events: none;
+        border-radius: inherit;
+        background:
+          /* sol-üst köşe */
+          linear-gradient(#22d3ee 0 0) left top / 1px 14px no-repeat,
+          linear-gradient(#22d3ee 0 0) left top / 14px 1px no-repeat,
+          /* sağ-üst köşe */
+          linear-gradient(#22d3ee 0 0) right top / 1px 14px no-repeat,
+          linear-gradient(#22d3ee 0 0) right top / 14px 1px no-repeat,
+          /* sol-alt köşe */
+          linear-gradient(#22d3ee 0 0) left bottom / 1px 14px no-repeat,
+          linear-gradient(#22d3ee 0 0) left bottom / 14px 1px no-repeat,
+          /* sağ-alt köşe */
+          linear-gradient(#22d3ee 0 0) right bottom / 1px 14px no-repeat,
+          linear-gradient(#22d3ee 0 0) right bottom / 14px 1px no-repeat;
+        opacity: 0.55;
+        mix-blend-mode: screen;
+      }
+
+      /* --- Indigo accent'ler → cyan --- */
+      html.dark .dashboard-scifi .text-indigo-300,
+      html.dark .dashboard-scifi .text-indigo-400 { color: #22d3ee !important; }
+      html.dark .dashboard-scifi .text-indigo-500 { color: #06b6d4 !important; }
+      html.dark .dashboard-scifi .bg-indigo-500,
+      html.dark .dashboard-scifi .bg-indigo-600 { background-color: #0891b2 !important; }
+      html.dark .dashboard-scifi .bg-indigo-500\/10,
+      html.dark .dashboard-scifi .bg-indigo-500\/20,
+      html.dark .dashboard-scifi .bg-indigo-600\/20 { background-color: rgba(34, 211, 238, 0.12) !important; }
+      html.dark .dashboard-scifi .border-indigo-500\/30,
+      html.dark .dashboard-scifi .border-indigo-500\/50,
+      html.dark .dashboard-scifi .border-indigo-600\/30 { border-color: rgba(34, 211, 238, 0.3) !important; }
+      html.dark .dashboard-scifi .hover\:bg-indigo-600\/20:hover { background-color: rgba(34, 211, 238, 0.18) !important; }
+      html.dark .dashboard-scifi .from-indigo-400,
+      html.dark .dashboard-scifi .from-indigo-500,
+      html.dark .dashboard-scifi .from-indigo-600 { --tw-gradient-from: #06b6d4 !important; }
+      html.dark .dashboard-scifi .to-purple-400,
+      html.dark .dashboard-scifi .to-purple-500,
+      html.dark .dashboard-scifi .to-purple-600 { --tw-gradient-to: #22d3ee !important; }
+      html.dark .dashboard-scifi .bg-purple-500\/10,
+      html.dark .dashboard-scifi .text-purple-300,
+      html.dark .dashboard-scifi .text-purple-400 { color: #67e8f9 !important; }
+      html.dark .dashboard-scifi .bg-purple-500 { background-color: #0891b2 !important; }
+
+      /* --- Sayı / başlık metinleri: parlak siyan-beyaz vurgu --- */
+      html.dark .dashboard-scifi h1,
+      html.dark .dashboard-scifi .text-3xl,
+      html.dark .dashboard-scifi .text-4xl {
+        text-shadow: 0 0 24px rgba(34, 211, 238, 0.18);
+      }
+
+      /* --- Scrollbar Dashboard'da siyan vurgu --- */
+      html.dark .dashboard-scifi ::-webkit-scrollbar-track { background: rgba(5, 10, 26, 0.6); }
+      html.dark .dashboard-scifi ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.25); }
+      html.dark .dashboard-scifi ::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.45); }
+
+      /* --- Pulse-glow utility (HUD orb / live status dots) --- */
+      @keyframes scifi-pulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6); }
+        50%      { opacity: 0.7; box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
+      }
+      html.dark .dashboard-scifi .scifi-pulse { animation: scifi-pulse 2.4s ease-in-out infinite; }
+
+      /* --- Header tarama çizgisi --- */
+      @keyframes scifi-scan {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      html.dark .dashboard-scifi .scifi-scan {
+        position: relative;
+        overflow: hidden;
+      }
+      html.dark .dashboard-scifi .scifi-scan::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.18), transparent);
+        animation: scifi-scan 6s linear infinite;
+        pointer-events: none;
+      }
+
+      /* =============================================================
+         LIGHT MODE — 2MC Werbung Marka Teması
+         Palet: /marka renkleri/ klasöründen.
+           #DD2D4A  marka kırmızısı (primary)
+           #880D1E  bordo (koyu vurgu / hover)
+           #F49CBB  açık pembe (soft badge / divider)
+           #F26A8D  marka koyu pembe (sekonder)
+           #FFE4E9  pembe-beyaz (kart kenarı, surface-2)
+           #FFF5F7  çok açık pembe-beyaz (surface-1)
+           #FFFFFF  beyaz (sayfa + kart fonu)
+           #CBEEF3  buz mavisi (opsiyonel info aksenti)
+         Felsefe: arka plan ve büyük yüzeyler BEYAZ ağırlıklı;
+         vurgu/CTA/hiperlink/aktif state KIRMIZI. Indigo primary
+         light modda kırmızıya remap'lenir. Dark tema dokunulmaz.
+         ============================================================= */
+      html.light body {
+        background-color: #ffffff;
+        color: #1a0a0e;            /* çok koyu kırmızımsı siyah */
+      }
+
+      /* --- Yüzey katmanları (zinc → beyaz / pembe-beyaz) --- */
+      html.light .bg-zinc-950 { background-color: #ffffff !important; }  /* page bg */
+      html.light .bg-zinc-900 { background-color: #ffffff !important; }  /* card bg */
+      html.light .bg-zinc-850 { background-color: #f5f8fd !important; }  /* surface-1 */
+      html.light .bg-zinc-800 { background-color: #e8f0fa !important; }  /* brand-100 */
+      html.light .bg-zinc-700 { background-color: #cfddf0 !important; }  /* brand-200 */
+
+      /* --- Yarı şeffaf yüzeyler --- */
+      html.light .bg-zinc-900\/30 { background-color: rgba(255, 255, 255, 0.5) !important; }
+      html.light .bg-zinc-900\/40 { background-color: rgba(255, 255, 255, 0.6) !important; }
+      html.light .bg-zinc-900\/50 { background-color: rgba(255, 255, 255, 0.78) !important; }
+      html.light .bg-zinc-900\/60 { background-color: rgba(255, 255, 255, 0.86) !important; }
+      html.light .bg-zinc-900\/80 { background-color: rgba(255, 255, 255, 0.94) !important; }
+      html.light .bg-zinc-900\/95 { background-color: rgba(255, 255, 255, 0.98) !important; }
+      html.light .bg-zinc-800\/30 { background-color: rgba(232, 240, 250, 0.45) !important; }
+      html.light .bg-zinc-800\/40 { background-color: rgba(232, 240, 250, 0.55) !important; }
+      html.light .bg-zinc-800\/50 { background-color: rgba(232, 240, 250, 0.65) !important; }
+      html.light .bg-zinc-800\/80 { background-color: rgba(232, 240, 250, 0.85) !important; }
+
+      /* --- Metin hiyerarşisi (koyu kırmızımsı siyahlar) --- */
+      html.light .text-white,
+      html.light .text-zinc-100,
+      html.light .text-zinc-200 { color: #1a0a0e !important; }   /* primary */
+      html.light .text-zinc-300 { color: #2d1116 !important; }   /* secondary */
+      html.light .text-zinc-400 { color: #5c2a35 !important; }   /* muted — pembemsi koyu gri */
+      html.light .text-zinc-500 { color: #7a4855 !important; }
+      html.light .text-zinc-600 { color: #a47480 !important; }
+      html.light .text-zinc-700 { color: #cbd5e1 !important; }   /* dekoratif (input border vb.) */
+
+      /* --- Kenarlıklar --- */
+      html.light .border-zinc-700 { border-color: #cfddf0 !important; }  /* brand-200 */
+      html.light .border-zinc-800 { border-color: #e8f0fa !important; }  /* brand-100 */
+      html.light .border-zinc-800\/30 { border-color: rgba(232, 240, 250, 0.5) !important; }
+      html.light .border-zinc-800\/50 { border-color: rgba(232, 240, 250, 0.75) !important; }
+      html.light .border-zinc-800\/80 { border-color: rgba(232, 240, 250, 0.9) !important; }
+      html.light .border-zinc-900,
+      html.light .border-zinc-900\/50 { border-color: #f5f8fd !important; }
+
+      /* --- Glass-panel marka light variant — beyaz + kırmızımsı border/gölge --- */
+      html.light .glass-panel {
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(12px) saturate(180%);
+        -webkit-backdrop-filter: blur(12px) saturate(180%);
+        border: 1px solid rgba(38, 40, 112, 0.10);
+        box-shadow: 0 1px 3px rgba(26, 29, 82, 0.06), 0 1px 2px rgba(26, 29, 82, 0.04);
+      }
+
+      /* --- Scrollbar — marka kırmızı thumb, açık pembe track --- */
+      html.light ::-webkit-scrollbar-track { background: #f5f8fd; }
+      html.light ::-webkit-scrollbar-thumb { background: #a8c6e8; border-radius: 3px; }
+      html.light ::-webkit-scrollbar-thumb:hover { background: #262870; }
+
+      /* --- Hover variantları --- */
+      html.light .hover\:bg-zinc-800:hover { background-color: #e8f0fa !important; }
+      html.light .hover\:bg-zinc-700:hover { background-color: #cfddf0 !important; }
+      html.light .hover\:bg-zinc-900:hover { background-color: #f5f8fd !important; }
+      html.light .hover\:text-white:hover { color: #1a0a0e !important; }
+      html.light .hover\:text-zinc-100:hover,
+      html.light .hover\:text-zinc-200:hover { color: #1a0a0e !important; }
+      html.light .hover\:text-zinc-300:hover { color: #2d1116 !important; }
+      html.light .hover\:border-zinc-700:hover { border-color: #262870 !important; }
+
+      /* --- Cards subtle elevation: beyaz kartlara bordo-tinted soft shadow --- */
+      html.light .bg-zinc-900.border,
+      html.light .bg-zinc-900.rounded-xl,
+      html.light .bg-zinc-900.rounded-2xl,
+      html.light .bg-zinc-900.rounded-lg {
+        box-shadow: 0 1px 2px rgba(26, 29, 82, 0.05), 0 1px 3px rgba(26, 29, 82, 0.07);
+      }
+
+      /* --- Şube neon renkleri light variant (okunabilirlik için 700) ---
+             Map'teki şube etiketleri/grafikler için. Marka kırmızısı dışı
+             tonlar 700'e koyulaştırılır. --- */
+      html.light .text-cyan-300,
+      html.light .text-cyan-400 { color: #0e7490 !important; }
+      html.light .text-fuchsia-300,
+      html.light .text-fuchsia-400 { color: #a21caf !important; }
+      html.light .text-amber-300,
+      html.light .text-amber-400 { color: #b45309 !important; }
+      html.light .text-emerald-300,
+      html.light .text-emerald-400 { color: #047857 !important; }
+      html.light .text-blue-300,
+      html.light .text-blue-400 { color: #1d4ed8 !important; }
+
+      /* --- INDIGO → MARKA KIRMIZISI map'i (eski primary'yi marka primary'ye çevirir) --- */
+      html.light .text-indigo-300,
+      html.light .text-indigo-400,
+      html.light .text-indigo-500,
+      html.light .text-indigo-600 { color: #262870 !important; }
+      html.light .text-indigo-700 { color: #1a1d52 !important; }
+      html.light .bg-indigo-500,
+      html.light .bg-indigo-600 { background-color: #262870 !important; }
+      html.light .bg-indigo-700 { background-color: #1a1d52 !important; }
+      html.light .bg-indigo-500\/10,
+      html.light .bg-indigo-600\/10 { background-color: rgba(38, 40, 112, 0.08) !important; }
+      html.light .bg-indigo-500\/20,
+      html.light .bg-indigo-600\/20 { background-color: rgba(38, 40, 112, 0.12) !important; }
+      html.light .bg-indigo-600\/30 { background-color: rgba(38, 40, 112, 0.18) !important; }
+      html.light .border-indigo-500,
+      html.light .border-indigo-600,
+      html.light .border-indigo-700 { border-color: #262870 !important; }
+      html.light .border-indigo-500\/30,
+      html.light .border-indigo-500\/40,
+      html.light .border-indigo-500\/50,
+      html.light .border-indigo-600\/30,
+      html.light .border-indigo-600\/40,
+      html.light .border-indigo-600\/50 { border-color: rgba(38, 40, 112, 0.35) !important; }
+      html.light .hover\:bg-indigo-500:hover,
+      html.light .hover\:bg-indigo-600:hover { background-color: #262870 !important; }
+      html.light .hover\:bg-indigo-700:hover { background-color: #1a1d52 !important; }
+      html.light .ring-indigo-500,
+      html.light .ring-indigo-600 { --tw-ring-color: #262870 !important; }
+      html.light .focus\:border-indigo-500:focus,
+      html.light .focus\:border-indigo-600:focus { border-color: #262870 !important; }
+      html.light .focus\:ring-indigo-500:focus,
+      html.light .focus\:ring-indigo-600:focus { --tw-ring-color: #262870 !important; }
+      html.light .focus\:ring-indigo-500\/40:focus { --tw-ring-color: rgba(38, 40, 112, 0.4) !important; }
+
+      /* --- ROSE / RED → marka kırmızısına snap'le (destructive de markaya uyumlu) --- */
+      html.light .text-rose-300,
+      html.light .text-rose-400 { color: #1a1d52 !important; }   /* bordo */
+      html.light .text-rose-500,
+      html.light .text-rose-600 { color: #262870 !important; }
+      html.light .text-rose-700 { color: #1a1d52 !important; }
+      html.light .text-red-300,
+      html.light .text-red-400 { color: #1a1d52 !important; }
+      html.light .text-red-500,
+      html.light .text-red-600 { color: #262870 !important; }
+      html.light .text-red-700 { color: #1a1d52 !important; }
+      html.light .bg-rose-500,
+      html.light .bg-rose-600,
+      html.light .bg-red-500,
+      html.light .bg-red-600 { background-color: #262870 !important; }
+      html.light .bg-rose-700,
+      html.light .bg-red-700 { background-color: #1a1d52 !important; }
+      html.light .bg-red-600\/10,
+      html.light .bg-red-600\/20,
+      html.light .bg-rose-600\/10,
+      html.light .bg-rose-600\/20 { background-color: rgba(38, 40, 112, 0.1) !important; }
+      html.light .border-red-600\/40,
+      html.light .border-rose-600\/40 { border-color: rgba(38, 40, 112, 0.4) !important; }
+      html.light .hover\:bg-red-500:hover,
+      html.light .hover\:bg-red-600:hover,
+      html.light .hover\:bg-rose-500:hover,
+      html.light .hover\:bg-rose-600:hover { background-color: #3a3f8e !important; }
+
+      /* --- Gradient yardımcıları --- */
+      /* Başlık gradient'i (örn. BAC Handels yazısı) — dark'ta from-white → koyu metin */
+      html.light .from-white { --tw-gradient-from: #1a0a0e !important; }
+      html.light .to-zinc-400 { --tw-gradient-to: #5c2a35 !important; }
+      /* Indigo/purple gradient'ler markaya remap */
+      html.light .from-indigo-500,
+      html.light .from-indigo-600 { --tw-gradient-from: #262870 !important; }
+      html.light .to-indigo-500,
+      html.light .to-indigo-600 { --tw-gradient-to: #262870 !important; }
+      html.light .from-purple-500,
+      html.light .from-purple-600 { --tw-gradient-from: #5078b8 !important; }
+      html.light .to-purple-500,
+      html.light .to-purple-600 { --tw-gradient-to: #5078b8 !important; }
+      /* Sayfa fonu gradient'leri (Login vb.) — beyaz/pembe-beyaz */
+      html.light .from-zinc-950 { --tw-gradient-from: #ffffff !important; }
+      html.light .via-zinc-900 { --tw-gradient-via: #f5f8fd !important; }
+      html.light .to-zinc-900,
+      html.light .to-zinc-950 { --tw-gradient-to: #e8f0fa !important; }
+
+      /* --- Form alanları --- */
+      html.light input,
+      html.light textarea,
+      html.light select {
+        background-color: #ffffff !important;
+        color: #1a0a0e !important;
+        border-color: #e8f0fa !important;
+      }
+      html.light input::placeholder,
+      html.light textarea::placeholder { color: #a47480 !important; }
+      html.light input:focus,
+      html.light textarea:focus,
+      html.light select:focus { border-color: #262870 !important; }
+
+      /* =============================================================
+         LIGHT MODE — Ek defansif override'lar
+         (Aşağıdaki class'lar Dashboard, Sales, Payroll, Shift, Map
+         vb. componentlerde hardcoded — light'ta hala siyah/turuncu
+         kalıyorlardı. BAC marka kırmızı/beyaz paletine snap'le.)
+         ============================================================= */
+
+      /* --- Hardcoded siyah ve hex koyu yüzeyler --- */
+      html.light .bg-black { background-color: #ffffff !important; }
+      html.light .bg-\[\#09090b\] { background-color: #ffffff !important; }
+      html.light .bg-\[\#050a1a\],
+      html.light .bg-\[\#0a1638\],
+      html.light .bg-\[\#020610\] { background-color: #ffffff !important; }
+      html.light .border-\[\#09090b\] { border-color: #ffffff !important; }
+      html.light .bg-zinc-950 { background-color: #ffffff !important; }
+      html.light .bg-zinc-950\/40 { background-color: rgba(255, 255, 255, 0.6) !important; }
+      html.light .bg-zinc-950\/60,
+      html.light .bg-zinc-950\/80,
+      html.light .bg-zinc-950\/90 { background-color: rgba(255, 255, 255, 0.92) !important; }
+
+      /* --- Gradient stop'ları (from/via/to black) --- */
+      html.light .from-black { --tw-gradient-from: #f5f8fd !important; }
+      html.light .via-black { --tw-gradient-via: #e8f0fa !important; }
+      html.light .to-black { --tw-gradient-to: #e8f0fa !important; }
+      html.light .from-zinc-950 { --tw-gradient-from: #ffffff !important; }
+      html.light .via-zinc-950 { --tw-gradient-via: #f5f8fd !important; }
+      html.light .to-zinc-950 { --tw-gradient-to: #e8f0fa !important; }
+
+      /* --- ORANGE → BAC marka kırmızı (Sales banner, transfer alert) --- */
+      html.light .bg-orange-500 { background-color: #262870 !important; }
+      html.light .bg-orange-600 { background-color: #262870 !important; }
+      html.light .bg-orange-700 { background-color: #3a3f8e !important; }
+      html.light .bg-orange-800 { background-color: #1a1d52 !important; }
+      html.light .bg-orange-700\/50 { background-color: rgba(38, 40, 112, 0.18) !important; }
+      html.light .bg-orange-500\/10,
+      html.light .bg-orange-500\/20,
+      html.light .bg-orange-600\/10,
+      html.light .bg-orange-600\/20 { background-color: rgba(38, 40, 112, 0.10) !important; }
+      html.light .border-orange-300,
+      html.light .border-orange-400,
+      html.light .border-orange-500,
+      html.light .border-orange-600 { border-color: #262870 !important; }
+      html.light .border-orange-400\/30,
+      html.light .border-orange-500\/30,
+      html.light .border-orange-500\/50 { border-color: rgba(38, 40, 112, 0.35) !important; }
+      html.light .text-orange-100,
+      html.light .text-orange-200 { color: #ffffff !important; }
+      html.light .text-orange-300 { color: #1a1d52 !important; }
+      html.light .text-orange-400 { color: #3a3f8e !important; }
+      html.light .text-orange-500,
+      html.light .text-orange-600 { color: #262870 !important; }
+      html.light .from-orange-500,
+      html.light .from-orange-600,
+      html.light .from-orange-950\/90 { --tw-gradient-from: #262870 !important; }
+      html.light .to-orange-500,
+      html.light .to-orange-600,
+      html.light .to-red-500,
+      html.light .to-red-600,
+      html.light .to-red-950\/90 { --tw-gradient-to: #1a1d52 !important; }
+      html.light .shadow-orange-900\/30,
+      html.light .shadow-orange-900\/40,
+      html.light .shadow-\[0_0_40px_rgba\(234\,88\,12\,0\.3\)\] { box-shadow: 0 4px 16px rgba(26, 29, 82, 0.15) !important; }
+      html.light .ring-orange-500\/30 { --tw-ring-color: rgba(38, 40, 112, 0.3) !important; }
+
+      /* --- PURPLE/VIOLET deep tone'ları → marka pembe-kırmızı --- */
+      html.light .bg-purple-500 { background-color: #5078b8 !important; }
+      html.light .bg-purple-600 { background-color: #262870 !important; }
+      html.light .bg-purple-500\/10 { background-color: rgba(80, 120, 184, 0.1) !important; }
+      html.light .bg-purple-500\/20 { background-color: rgba(80, 120, 184, 0.18) !important; }
+      html.light .text-purple-300,
+      html.light .text-purple-400 { color: #3a3f8e !important; }
+      html.light .text-purple-500 { color: #262870 !important; }
+      html.light .border-purple-500\/20,
+      html.light .border-purple-500\/30 { border-color: rgba(80, 120, 184, 0.3) !important; }
+      html.light .from-purple-500,
+      html.light .from-purple-600,
+      html.light .from-purple-900\/90 { --tw-gradient-from: #5078b8 !important; }
+      html.light .to-purple-400,
+      html.light .to-purple-500,
+      html.light .to-purple-600,
+      html.light .to-purple-900\/90 { --tw-gradient-to: #a8c6e8 !important; }
+      html.light .shadow-purple-900\/10,
+      html.light .shadow-purple-900\/20 { box-shadow: 0 4px 16px rgba(80, 120, 184, 0.15) !important; }
+
+      /* --- INDIGO deep tone (banner gradient'leri) → marka --- */
+      html.light .from-indigo-500,
+      html.light .from-indigo-900\/90 { --tw-gradient-from: #262870 !important; }
+      html.light .to-indigo-500,
+      html.light .to-indigo-900\/90 { --tw-gradient-to: #1a1d52 !important; }
+      html.light .text-indigo-100,
+      html.light .text-indigo-200 { color: #ffffff !important; }
+      html.light .text-indigo-800,
+      html.light .text-indigo-900 { color: #0d0f3a !important; }
+      html.light .bg-indigo-900\/10 { background-color: rgba(38, 40, 112, 0.08) !important; }
+      html.light .bg-indigo-900\/20 { background-color: rgba(38, 40, 112, 0.12) !important; }
+      html.light .ring-indigo-500\/30 { --tw-ring-color: rgba(38, 40, 112, 0.3) !important; }
+      html.light .shadow-\[0_0_30px_rgba\(99\,102\,241\,0\.2\)\] { box-shadow: 0 4px 24px rgba(38, 40, 112, 0.12) !important; }
+      html.light .shadow-indigo-900\/20,
+      html.light .shadow-indigo-900\/30 { box-shadow: 0 4px 16px rgba(26, 29, 82, 0.10) !important; }
+
+      /* --- EMERALD deep tone (QR mesai kartı gradient) → açık pastel --- */
+      html.light .from-emerald-900\/40 { --tw-gradient-from: #ecfdf5 !important; } /* emerald-50 */
+      html.light .from-emerald-900\/90,
+      html.light .to-emerald-900 { --tw-gradient-from: #10b981 !important; --tw-gradient-to: #047857 !important; }
+      html.light .shadow-emerald-900\/50 { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15) !important; }
+
+      /* --- Black/koyu shadow'lar → markaya yakın soft shadow --- */
+      html.light .shadow-\[0_10px_30px_-10px_rgba\(0\,0\,0\,0\.5\)\] { box-shadow: 0 8px 24px rgba(26, 29, 82, 0.10) !important; }
+      html.light .shadow-2xl { box-shadow: 0 12px 28px rgba(26, 29, 82, 0.12) !important; }
+
+      /* --- bg-black/X yarı şeffaf overlay'ler --- */
+      html.light .bg-black\/20,
+      html.light .bg-black\/30,
+      html.light .bg-black\/40,
+      html.light .bg-black\/50,
+      html.light .bg-black\/60,
+      html.light .bg-black\/70,
+      html.light .bg-black\/80 { background-color: rgba(245, 248, 253, 0.85) !important; }
+
+      /* --- Koyu-tone /10-/20 yüzeyler → açık marka pastelleri --- */
+      html.light .bg-emerald-900\/10 { background-color: rgba(16, 185, 129, 0.08) !important; }
+      html.light .bg-emerald-900\/20 { background-color: rgba(16, 185, 129, 0.12) !important; }
+      html.light .bg-amber-900\/10 { background-color: rgba(245, 158, 11, 0.08) !important; }
+      html.light .bg-amber-900\/20 { background-color: rgba(245, 158, 11, 0.12) !important; }
+      html.light .bg-red-900\/10,
+      html.light .bg-red-900\/20,
+      html.light .bg-red-900\/30 { background-color: rgba(38, 40, 112, 0.08) !important; }
+      html.light .border-red-900\/30 { border-color: rgba(38, 40, 112, 0.25) !important; }
+      html.light .bg-blue-900\/10,
+      html.light .bg-blue-900\/20 { background-color: rgba(59, 130, 246, 0.08) !important; }
+
+      /* --- Emerald start (gradient `from-emerald-500 to-green-600` ikon kapsülü) — koru, marka değil ama
+             başarı renkleri light'ta okunabilir. Sadece çok-koyu emerald-9XX backdrop'ları beyaz yap. --- */
+      html.light .from-emerald-900\/10,
+      html.light .from-emerald-900\/20,
+      html.light .from-emerald-900\/40 { --tw-gradient-from: #f0fdf4 !important; }
+      html.light .to-emerald-900\/10,
+      html.light .to-emerald-900\/40 { --tw-gradient-to: #ecfdf5 !important; }
+
+      /* --- Amber gradient (`from-orange-600 to-amber-600` Save button vb.) marka kırmızısına bağlı,
+             zaten orange override'da kapsandı. Burada eksik amber spot'larını snap'le. --- */
+      html.light .from-amber-600,
+      html.light .from-amber-500 { --tw-gradient-from: #3a3f8e !important; }
+      html.light .to-amber-600,
+      html.light .to-amber-500 { --tw-gradient-to: #1a1d52 !important; }
+      html.light .hover\:from-amber-500:hover { --tw-gradient-from: #262870 !important; }
+      html.light .hover\:to-amber-500:hover { --tw-gradient-to: #3a3f8e !important; }
+
+      /* --- Inline turuncu rgba shadow'lar (Payroll transfer butonu) --- */
+      html.light .shadow-\[0_0_15px_rgba\(249\,115\,22\,0\.4\)\],
+      html.light .shadow-\[0_0_25px_rgba\(249\,115\,22\,0\.6\)\],
+      html.light .hover\:shadow-\[0_0_25px_rgba\(249\,115\,22\,0\.6\)\]:hover {
+        box-shadow: 0 4px 16px rgba(38, 40, 112, 0.25) !important;
+      }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
