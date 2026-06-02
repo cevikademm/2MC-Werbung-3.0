@@ -43,6 +43,11 @@ interface LayoutProps {
 
 const BAC_LOGO_URL = "https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png";
 
+// 2MC Werbung için gizlenen sekmeler. Geri açmak için ilgili id'yi bu Set'ten çıkar.
+// Etki: Mobile header (üst), Desktop sidebar, Mobile bottom nav — her üçünden gizlenir.
+const HIDDEN_TABS = new Set<string>(['sales', 'shifts', 'map', 'device-brands', 'loss-control']);
+const isTabHidden = (id: string) => HIDDEN_TABS.has(id);
+
 // Desktop Sidebar Item
 const SidebarItem = ({ icon: Icon, label, id, active, onClick }: any) => (
   <button
@@ -130,7 +135,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
               >
                   {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
               </button>
-              {isAdmin && (
+              {isAdmin && !isTabHidden('loss-control') && (
                 <button
                   onClick={() => setActiveTab('loss-control')}
                   className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
@@ -143,7 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                   <ShieldAlert size={16} />
                 </button>
               )}
-              {canSeeMap(userEmail, userRole) && (
+              {!isTabHidden('map') && canSeeMap(userEmail, userRole) && (
                 <button
                   onClick={() => setActiveTab('map')}
                   className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
@@ -156,7 +161,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
                   <MapIcon size={16} />
                 </button>
               )}
-              {isAdmin && canSeeDeviceInfo(userEmail) && (
+              {!isTabHidden('device-brands') && isAdmin && canSeeDeviceInfo(userEmail) && (
                 <button
                   onClick={() => setActiveTab('device-brands')}
                   className={`flex items-center justify-center h-8 w-8 rounded-lg border transition-colors ${
@@ -211,14 +216,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
           <SidebarItem icon={LayoutDashboard} label={t('nav.dashboard')} id="dashboard" active={activeTab === 'dashboard'} onClick={setActiveTab} />
           <SidebarItem icon={MessageSquare} label={t('nav.messages')} id="messages" active={activeTab === 'messages'} onClick={setActiveTab} />
           <SidebarItem icon={CalendarIcon} label={t('nav.calendar')} id="calendar" active={activeTab === 'calendar'} onClick={setActiveTab} />
-          <SidebarItem icon={Table} label={t('nav.shifts')} id="shifts" active={activeTab === 'shifts'} onClick={setActiveTab} />
+          {!isTabHidden('shifts') && (
+            <SidebarItem icon={Table} label={t('nav.shifts')} id="shifts" active={activeTab === 'shifts'} onClick={setActiveTab} />
+          )}
           <SidebarItem icon={CheckSquare} label={t('nav.tasks')} id="tasks" active={activeTab === 'tasks'} onClick={setActiveTab} />
-          <SidebarItem icon={ShoppingBag} label={t('nav.sales')} id="sales" active={activeTab === 'sales'} onClick={setActiveTab} />
+          {!isTabHidden('sales') && (
+            <SidebarItem icon={ShoppingBag} label={t('nav.sales')} id="sales" active={activeTab === 'sales'} onClick={setActiveTab} />
+          )}
           <SidebarItem icon={Users} label={t('nav.payroll')} id="payroll" active={activeTab === 'payroll'} onClick={setActiveTab} />
-          {canSeeMap(userEmail, userRole) && (
+          {!isTabHidden('map') && canSeeMap(userEmail, userRole) && (
             <SidebarItem icon={MapIcon} label={t('nav.map')} id="map" active={activeTab === 'map'} onClick={setActiveTab} />
           )}
-          {isAdmin && canSeeDeviceInfo(userEmail) && (
+          {!isTabHidden('device-brands') && isAdmin && canSeeDeviceInfo(userEmail) && (
             <SidebarItem icon={Smartphone} label={t('nav.deviceBrands')} id="device-brands" active={activeTab === 'device-brands'} onClick={setActiveTab} />
           )}
           <div className="pt-4 mt-4 border-t border-slate-200 dark:border-zinc-900">
@@ -227,7 +236,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         </nav>
 
         <div className="mt-auto">
-            {isAdmin && (
+            {isAdmin && !isTabHidden('loss-control') && (
               <div className="px-4 pb-2">
                 <button
                   onClick={() => setActiveTab('loss-control')}
@@ -349,8 +358,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
         <nav className="w-full h-16 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/60 rounded-2xl flex justify-around items-center px-1 shadow-[0_8px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.6)] pointer-events-auto">
             <MobileNavItem icon={LayoutDashboard} label={t('nav.dashboard')} id="dashboard" active={activeTab === 'dashboard'} onClick={setActiveTab} />
             <MobileNavItem icon={CalendarIcon} label={t('nav.calendar')} id="calendar" active={activeTab === 'calendar'} onClick={setActiveTab} />
-            <MobileNavItem icon={ShoppingBag} label={t('nav.sales')} id="sales" active={activeTab === 'sales'} onClick={setActiveTab} />
-            <MobileNavItem icon={Table} label={t('nav.shifts')} id="shifts" active={activeTab === 'shifts'} onClick={setActiveTab} />
+            {!isTabHidden('sales') && (
+              <MobileNavItem icon={ShoppingBag} label={t('nav.sales')} id="sales" active={activeTab === 'sales'} onClick={setActiveTab} />
+            )}
+            {!isTabHidden('shifts') && (
+              <MobileNavItem icon={Table} label={t('nav.shifts')} id="shifts" active={activeTab === 'shifts'} onClick={setActiveTab} />
+            )}
             <MobileNavItem icon={CheckSquare} label={t('nav.tasks')} id="tasks" active={activeTab === 'tasks'} onClick={setActiveTab} />
             <MobileNavItem icon={Users} label={t('nav.payroll')} id="payroll" active={activeTab === 'payroll'} onClick={setActiveTab} />
         </nav>
