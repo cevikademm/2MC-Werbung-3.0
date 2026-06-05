@@ -70,7 +70,9 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
       startTime: '09:00',
       endTime: '17:00',
       breakDuration: 0,
-      branch: Branch.DOM
+      branch: Branch.DOM,
+      description: '',
+      location: ''
   });
 
   // Arama state'i
@@ -780,6 +782,12 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
       e.preventDefault();
       if (!targetEmployeeId) return;
 
+      // Açıklama ve konum zorunlu — bu bilgiler olmadan kayıt yapılamaz.
+      if (!timeForm.description.trim() || !timeForm.location.trim()) {
+          alert(t('pay.descLocationRequired'));
+          return;
+      }
+
       setIsLoading(true);
 
       // Saatler değiştiğinde total_hours otomatik yeniden hesaplanır.
@@ -809,6 +817,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
               break_duration: timeForm.breakDuration || 0,
               total_hours: totalHours,
               branch: timeForm.branch,
+              description: timeForm.description.trim(),
+              location: timeForm.location.trim(),
           };
           if (checkOutAtUpdate) updates.check_out_at = checkOutAtUpdate;
 
@@ -829,8 +839,27 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
               breakDuration: timeForm.breakDuration || 0,
               totalHours,
               branch: timeForm.branch,
+              description: timeForm.description.trim(),
+              location: timeForm.location.trim(),
               checkOutAt: checkOutAtUpdate || log.checkOutAt,
           } : log));
+
+          // Manuel saat düzeltmesinde de mesai bildirimi (qr_check tercihi açıksa)
+          const editedEmp = employees.find(emp => emp.id === targetEmployeeId);
+          notifyEvent({
+              type: 'qr_check',
+              employee_id: targetEmployeeId,
+              employee_name: editedEmp?.name || 'Personel',
+              branch: timeForm.branch,
+              action: 'out',
+              method: 'manual',
+              start_time: timeForm.startTime,
+              end_time: timeForm.endTime,
+              total_hours: totalHours,
+              date: timeForm.date,
+              at: new Date().toISOString(),
+          });
+
           setShowTimeModal(false);
           setEditingLogId(null);
           setIsLoading(false);
@@ -847,6 +876,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
               break_duration: timeForm.breakDuration,
               total_hours: totalHours,
               branch: timeForm.branch,
+              description: timeForm.description.trim(),
+              location: timeForm.location.trim(),
               status: currentUser.role === Role.ADMIN ? 'Onaylandı' : 'Bekliyor',
           };
 
@@ -863,7 +894,9 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                   breakDuration: timeForm.breakDuration,
                   totalHours: totalHours,
                   status: newLogDb.status as any,
-                  branch: timeForm.branch
+                  branch: timeForm.branch,
+                  description: timeForm.description.trim(),
+                  location: timeForm.location.trim()
               };
               setTimeLogs([newLogFrontend, ...timeLogs]);
               setShowTimeModal(false);
@@ -877,6 +910,21 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                   employee_name: targetEmp?.name || 'Personel',
                   branch: timeForm.branch,
                   action: 'in',
+              });
+
+              // Manuel saat eklemede de mesai giriş/çıkış bildirimi (qr_check tercihi açıksa)
+              notifyEvent({
+                  type: 'qr_check',
+                  employee_id: targetEmployeeId,
+                  employee_name: targetEmp?.name || 'Personel',
+                  branch: timeForm.branch,
+                  action: 'in',
+                  method: 'manual',
+                  start_time: timeForm.startTime,
+                  end_time: timeForm.endTime,
+                  total_hours: totalHours,
+                  date: timeForm.date,
+                  at: new Date().toISOString(),
               });
           }
       } catch (err: any) {
@@ -892,7 +940,9 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                 breakDuration: timeForm.breakDuration,
                 totalHours: totalHours,
                 status: currentUser.role === Role.ADMIN ? 'Onaylandı' : 'Bekliyor',
-                branch: timeForm.branch
+                branch: timeForm.branch,
+                description: timeForm.description.trim(),
+                location: timeForm.location.trim()
            };
            setTimeLogs([newLogFrontend, ...timeLogs]);
            setShowTimeModal(false);
@@ -1004,7 +1054,9 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
           startTime: '09:00',
           endTime: '17:00',
           breakDuration: 0,
-          branch: Branch.DOM
+          branch: Branch.DOM,
+          description: '',
+          location: ''
       });
       setShowTimeModal(true);
   };
@@ -1023,6 +1075,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
           endTime: log.endTime || '17:00',
           breakDuration: log.breakDuration || 0,
           branch: (log.branch as Branch) || Branch.DOM,
+          description: log.description || '',
+          location: log.location || '',
       });
       setShowTimeModal(true);
   };

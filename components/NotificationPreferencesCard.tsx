@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, AlertTriangle, ShoppingBag, Clock, FileText, Loader2, RefreshCw, CheckCircle2, BarChart3, MapPin, DoorOpen } from 'lucide-react';
+import { Bell, AlertTriangle, ShoppingBag, Clock, FileText, Loader2, RefreshCw, CheckCircle2, BarChart3, MapPin, DoorOpen, LogIn, ListChecks } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Employee, Role } from '../types';
 import { useLanguage } from '../lib/i18n';
@@ -19,6 +19,8 @@ interface NotificationPrefs {
   non_kiosk_check: boolean;
   geofence_enter: boolean;
   geofence_exit: boolean;
+  qr_check: boolean;
+  task_activity: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
@@ -28,6 +30,8 @@ const DEFAULT_PREFS: NotificationPrefs = {
   non_kiosk_check: true,
   geofence_enter: true,
   geofence_exit: true,
+  qr_check: true,
+  task_activity: true,
 };
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
@@ -86,6 +90,20 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.geofenceExitDesc',
     icon: DoorOpen,
     color: 'text-rose-400',
+  },
+  {
+    key: 'qr_check',
+    titleKey: 'notif.qrCheckTitle',
+    descKey: 'notif.qrCheckDesc',
+    icon: LogIn,
+    color: 'text-green-400',
+  },
+  {
+    key: 'task_activity',
+    titleKey: 'notif.taskActivityTitle',
+    descKey: 'notif.taskActivityDesc',
+    icon: ListChecks,
+    color: 'text-indigo-400',
   },
 ];
 

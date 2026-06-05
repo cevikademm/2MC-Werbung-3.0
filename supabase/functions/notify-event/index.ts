@@ -50,7 +50,9 @@ interface EventBody {
     | 'non_kiosk_check'
     | 'geofence_enter'
     | 'geofence_exit'
-    | 'qr_scan_error';
+    | 'qr_scan_error'
+    | 'qr_check'
+    | 'task_activity';
   employee_name?: string;
   employee_id?: string;
   branch?: string;
@@ -65,6 +67,24 @@ interface EventBody {
   error_kind?: string;
   error_detail?: string;
   device_info?: string;
+  // qr_check (her mesai giriş/çıkışı) için ek alanlar
+  method?: 'qr' | 'manual';
+  start_time?: string;
+  end_time?: string;
+  total_hours?: number;
+  date?: string;
+  // task_activity (görev işlemleri) için ek alanlar
+  task_action?:
+    | 'created'
+    | 'updated'
+    | 'deleted'
+    | 'checklist_done'
+    | 'checklist_undone'
+    | 'completed'
+    | 'reopened';
+  task_title?: string;
+  item_text?: string;
+  actor_name?: string;
 }
 
 // Bildirim gövdesi formatı: "SS, HH:MM, DD.MM.YYYY" (Europe/Berlin)
@@ -150,6 +170,45 @@ const buildNotification = (e: EventBody): { title: string; body: string; url: st
         tag: `qr-scan-error-${e.employee_id || ''}`,
       };
     }
+    case 'qr_check': {
+      const tt = formatBerlin(e.at);
+      const isOut = e.action === 'out';
+      const via = e.method === 'manual' ? 'manuel' : 'QR';
+      const hours =
+        typeof e.total_hours === 'number' && e.total_hours > 0
+          ? ` • ${e.total_hours.toFixed(2)} sa`
+          : '';
+      const span =
+        e.start_time || e.end_time
+          ? ` • ${e.start_time || '—'}–${e.end_time || '—'}`
+          : '';
+      return {
+        title: isOut ? '🔴 Mesai Çıkışı' : '🟢 Mesai Girişi',
+        body: `${e.employee_name || 'Personel'} (${e.branch || '-'}) — ${isOut ? 'çıkış' : 'giriş'} (${via})${span}${hours} • ${tt}`,
+        url: '/payroll',
+        tag: `qr-check-${e.employee_id || ''}-${e.action || ''}-${e.at || ''}`,
+      };
+    }
+    case 'task_activity': {
+      const labels: Record<string, string> = {
+        created: 'görev oluşturdu',
+        updated: 'görevi güncelledi',
+        deleted: 'görevi sildi',
+        checklist_done: 'adımı tamamladı',
+        checklist_undone: 'adımı geri aldı',
+        completed: 'görevi bitirdi',
+        reopened: 'görevi yeniden açtı',
+      };
+      const lbl = labels[e.task_action || ''] || (e.task_action || 'işlem yaptı');
+      const who = e.actor_name || e.employee_name || 'Kullanıcı';
+      const item = e.item_text ? ` → "${e.item_text}"` : '';
+      return {
+        title: '📋 Görev İşlemi',
+        body: `${who}: "${e.task_title || 'Görev'}" ${lbl}${item}`,
+        url: '/tasks',
+        tag: `task-activity-${e.task_action || ''}-${e.task_title || ''}-${e.item_text || ''}`,
+      };
+    }
     default:
       return { title: '2MC Werbung', body: '', url: '/dashboard', tag: 'event' };
   }
@@ -221,6 +280,15 @@ serve(async (req) => {
       error_kind: body.error_kind || null,
       error_detail: body.error_detail || null,
       device_info: body.device_info || null,
+      method: body.method || null,
+      start_time: body.start_time || null,
+      end_time: body.end_time || null,
+      total_hours: body.total_hours ?? null,
+      date: body.date || null,
+      task_action: body.task_action || null,
+      task_title: body.task_title || null,
+      item_text: body.item_text || null,
+      actor_name: body.actor_name || null,
     },
   });
 

@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, MoreVertical, Plus, Edit2, Trash2, CheckSquare,
 import { includeAsPersonnel } from '../constants';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { notifyEvent } from '../lib/notifyEvent';
 import { translateContent } from '../services/geminiService';
 import { GlowingEffect } from './ui/glowing-effect';
 
@@ -254,26 +255,59 @@ const Tasks: React.FC<TasksProps> = ({ currentUser }) => {
                 completed_at: newCompletedAt,
                 completed_by: newCompletedBy
             }).eq('id', taskId);
-            
+
             // Local update for immediate feedback
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, checklist: newChecklist, progress: newProgress, status: newStatus, completedAt: newCompletedAt, completedBy: newCompletedBy } : t));
 
+            // Bildirim: her checklist adımı (yapıldı/geri alındı) admin'e push
+            const itemNowDone = !targetItem?.completed;
+            notifyEvent({
+                type: 'task_activity',
+                task_action: itemNowDone ? 'checklist_done' : 'checklist_undone',
+                task_title: taskToUpdate.title,
+                item_text: targetItem?.text,
+                actor_name: currentUser.name,
+                employee_id: currentUser.id,
+                at: new Date().toISOString(),
+            });
+            // Görev %100 tamamlandıysa ayrıca "görev bitirildi" bildirimi
+            if (newProgress === 100 && taskToUpdate.status !== 'done') {
+                notifyEvent({
+                    type: 'task_activity',
+                    task_action: 'completed',
+                    task_title: taskToUpdate.title,
+                    actor_name: currentUser.name,
+                    employee_id: currentUser.id,
+                    at: new Date().toISOString(),
+                });
+            }
         } catch (err) {
             console.error("Checklist update error:", err);
         }
     };
 
     const reopenTask = async (taskId: string) => {
+        const taskToReopen = tasks.find(t => t.id === taskId);
         try {
             const { error } = await supabase.from('tasks').update({
                 status: 'in_progress',
                 completed_at: null
             }).eq('id', taskId);
-            
+
             if(error) throw error;
-            
+
             // Local update
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'in_progress', completedAt: undefined } : t));
+
+            // Bildirim: görev yeniden açıldı
+            notifyEvent({
+                type: 'task_activity',
+                task_action: 'reopened',
+                task_title: taskToReopen?.title,
+                actor_name: currentUser.name,
+                employee_id: currentUser.id,
+                at: new Date().toISOString(),
+            });
         } catch (err) {
             console.error("Task reopen error:", err);
         }
@@ -281,12 +315,23 @@ const Tasks: React.FC<TasksProps> = ({ currentUser }) => {
     
     const handleDeleteTask = async (taskId: string) => {
         if (!confirm(t('tasks.confirmDelete'))) return;
+        const taskToDelete = tasks.find(t => t.id === taskId);
         try {
             const { error } = await supabase.from('tasks').delete().eq('id', taskId);
             if(error) throw error;
-            
+
             // State update
             setTasks(prev => prev.filter(t => t.id !== taskId));
+
+            // Bildirim: görev silindi
+            notifyEvent({
+                type: 'task_activity',
+                task_action: 'deleted',
+                task_title: taskToDelete?.title,
+                actor_name: currentUser.name,
+                employee_id: currentUser.id,
+                at: new Date().toISOString(),
+            });
         } catch(err: any) {
             console.warn("Delete error:", err);
             alert(t('tasks.deleteFailed'));
@@ -377,6 +422,16 @@ const Tasks: React.FC<TasksProps> = ({ currentUser }) => {
                 const newTask = { ...taskPayload, id: taskPayload.id, assignedTo: taskPayload.assigned_to, dueDate: taskPayload.due_date } as Task;
                 setTasks(prev => [...prev, newTask]);
             }
+
+            // Bildirim: görev oluşturuldu / güncellendi
+            notifyEvent({
+                type: 'task_activity',
+                task_action: editingTaskId ? 'updated' : 'created',
+                task_title: taskPayload.title,
+                actor_name: currentUser.name,
+                employee_id: currentUser.id,
+                at: new Date().toISOString(),
+            });
 
             setShowAddModal(false);
             setNewTaskForm({

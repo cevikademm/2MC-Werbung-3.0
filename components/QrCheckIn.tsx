@@ -340,6 +340,21 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
         clearShiftActive();
       }
 
+      // Her başarılı QR giriş/çıkışında admin'e push (qr_check tercihi açıksa)
+      notifyEvent({
+        type: 'qr_check',
+        employee_id: currentUser.id,
+        employee_name: currentUser.name,
+        branch: (resp as any).branch,
+        action: actionRef.current,
+        method: 'qr',
+        start_time: (resp as any).start_time,
+        end_time: (resp as any).end_time,
+        total_hours: typeof resp.total_hours === 'number' ? resp.total_hours : undefined,
+        device_info: deviceLabel,
+        at: new Date().toISOString(),
+      });
+
       // Vardiya saati dışı QR ise admin'e push (edge function shift kontrolü yapar)
       notifyEvent({
         type: 'off_shift_qr',

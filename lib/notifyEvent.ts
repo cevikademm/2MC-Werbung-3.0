@@ -14,7 +14,18 @@ export type NotifyEventType =
   | 'non_kiosk_check'
   | 'geofence_enter'
   | 'geofence_exit'
-  | 'qr_scan_error';
+  | 'qr_scan_error'
+  | 'qr_check'
+  | 'task_activity';
+
+export type TaskActionKind =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'checklist_done'
+  | 'checklist_undone'
+  | 'completed'
+  | 'reopened';
 
 export interface NotifyEventPayload {
   type: NotifyEventType;
@@ -31,6 +42,17 @@ export interface NotifyEventPayload {
   error_kind?: string;
   error_detail?: string;
   device_info?: string;
+  // qr_check (her mesai giriş/çıkışı) için ek alanlar
+  method?: 'qr' | 'manual';
+  start_time?: string;
+  end_time?: string;
+  total_hours?: number;
+  date?: string;
+  // task_activity (görev işlemleri) için ek alanlar
+  task_action?: TaskActionKind;
+  task_title?: string;
+  item_text?: string;
+  actor_name?: string;
 }
 
 export const notifyEvent = (payload: NotifyEventPayload): void => {
