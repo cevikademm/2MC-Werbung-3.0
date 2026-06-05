@@ -73,6 +73,7 @@ interface EventBody {
   end_time?: string;
   total_hours?: number;
   date?: string;
+  note?: string;
   // task_activity (görev işlemleri) için ek alanlar
   task_action?:
     | 'created'
@@ -182,9 +183,10 @@ const buildNotification = (e: EventBody): { title: string; body: string; url: st
         e.start_time || e.end_time
           ? ` • ${e.start_time || '—'}–${e.end_time || '—'}`
           : '';
+      const note = e.note ? ` • 📝 ${e.note}` : '';
       return {
         title: isOut ? '🔴 Mesai Çıkışı' : '🟢 Mesai Girişi',
-        body: `${e.employee_name || 'Personel'} (${e.branch || '-'}) — ${isOut ? 'çıkış' : 'giriş'} (${via})${span}${hours} • ${tt}`,
+        body: `${e.employee_name || 'Personel'} (${e.branch || '-'}) — ${isOut ? 'çıkış' : 'giriş'} (${via})${span}${hours}${note} • ${tt}`,
         url: '/payroll',
         tag: `qr-check-${e.employee_id || ''}-${e.action || ''}-${e.at || ''}`,
       };
@@ -285,6 +287,7 @@ serve(async (req) => {
       end_time: body.end_time || null,
       total_hours: body.total_hours ?? null,
       date: body.date || null,
+      note: body.note || null,
       task_action: body.task_action || null,
       task_title: body.task_title || null,
       item_text: body.item_text || null,

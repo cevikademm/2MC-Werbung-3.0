@@ -81,11 +81,17 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
   const [errorDetail, setErrorDetail] = useState<string>('');
   const [result, setResult] = useState<RpcResponse | null>(null);
 
+  // Açıklama + konum zorunlu — bu bilgiler olmadan QR taramaya başlanamaz.
+  const [description, setDescription] = useState('');
+  const [geoPos, setGeoPos] = useState<GeolocationPosition | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'pending' | 'ok' | 'failed'>('pending');
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const decodedRef = useRef<boolean>(false);
   const locationPromiseRef = useRef<Promise<GeolocationPosition | null> | null>(null);
   const actionRef = useRef<ScanAction>('in');
+  const descriptionRef = useRef<string>('');
 
   // Cleanup on unmount
   useEffect(() => {
@@ -248,14 +254,41 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
       );
     });
 
+  // Konumu önceden yakala — taramaya başlamadan önce konum bilgisi zorunlu.
+  const captureLocation = () => {
+    setGeoStatus('pending');
+    getLocation().then((pos) => {
+      if (pos) {
+        setGeoPos(pos);
+        setGeoStatus('ok');
+      } else {
+        setGeoPos(null);
+        setGeoStatus('failed');
+      }
+    });
+  };
+
+  // 'idle' ekranına her dönüşte konumu (yeniden) iste.
+  useEffect(() => {
+    if (phase === 'idle' && geoStatus !== 'ok') {
+      captureLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // Açıklama + konum tamam mı? (tarama butonları bu koşulla aktifleşir)
+  const gateReady = description.trim().length > 0 && geoStatus === 'ok' && !!geoPos;
+
   const handleStart = (action: ScanAction) => {
+    if (!gateReady) return; // bilgiler eksikse devam etme
     actionRef.current = action;
+    descriptionRef.current = description.trim();
     setErrorKind(null);
     setErrorDetail('');
     setResult(null);
     decodedRef.current = false;
-    // Kick off geolocation in parallel (don't block camera on it)
-    locationPromiseRef.current = getLocation();
+    // Konum zaten yakalandı — submit sırasında aynı konumu kullan.
+    locationPromiseRef.current = Promise.resolve(geoPos);
     setPhase('scanning');
   };
 
@@ -320,6 +353,22 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
       }
       setResult(resp);
       setPhase('result');
+
+      // Açıklama + konum bilgisini time_logs satırına yaz (RPC log_id döner).
+      // RLS "timelogs_open" politikası bu güncellemeye izin veriyor.
+      if (resp.log_id) {
+        const locText = (lat != null && lng != null)
+          ? `GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          : '';
+        void supabase
+          .from('time_logs')
+          .update({ description: descriptionRef.current, location: locText })
+          .eq('id', resp.log_id)
+          .then(({ error }) => {
+            if (error) console.warn('[QR] açıklama/konum güncellenemedi:', error);
+          });
+      }
+
       // Başarılı denemeyi de log'la (zaten time_logs'a yazıldı ama
       // qr_scan_attempts ortak metrik için tek noktada)
       void logScanAttempt({
@@ -352,6 +401,7 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
         end_time: (resp as any).end_time,
         total_hours: typeof resp.total_hours === 'number' ? resp.total_hours : undefined,
         device_info: deviceLabel,
+        note: descriptionRef.current || undefined,
         at: new Date().toISOString(),
       });
 
@@ -404,6 +454,7 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
     setResult(null);
     setErrorKind(null);
     setErrorDetail('');
+    setDescription('');
     decodedRef.current = false;
   };
 
@@ -495,27 +546,79 @@ const QrCheckIn: React.FC<Props> = ({ currentUser, onComplete }) => {
               <QrCode size={40} className="text-emerald-400" />
             </div>
             <p className="text-sm text-slate-700 dark:text-zinc-300 mb-4 font-medium">{t('qr.pickAction')}</p>
+
+            {/* Açıklama — zorunlu */}
+            <div className="text-left space-y-1 mb-3">
+              <label className="text-xs text-slate-600 dark:text-zinc-400">{t('qr.description')} <span className="text-red-500">*</span></label>
+              <textarea
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('qr.descriptionPlaceholder')}
+                className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-2 text-sm text-slate-900 dark:text-white resize-none"
+              />
+            </div>
+
+            {/* Konum durumu — zorunlu */}
+            <div className="text-left mb-4">
+              <div className={`flex items-center gap-2 text-xs rounded-lg border px-3 py-2 ${
+                geoStatus === 'ok'
+                  ? 'border-emerald-800/50 bg-emerald-950/20 text-emerald-300'
+                  : geoStatus === 'pending'
+                  ? 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400'
+                  : 'border-amber-800/60 bg-amber-950/20 text-amber-300'
+              }`}>
+                {geoStatus === 'pending'
+                  ? <Loader2 size={14} className="animate-spin shrink-0" />
+                  : <MapPin size={14} className="shrink-0" />}
+                <span className="flex-1">
+                  {geoStatus === 'ok' && (
+                    <>
+                      {t('qr.locationCaptured')}
+                      {geoPos && (
+                        <span className="ml-1 font-mono text-[10px] opacity-80">
+                          ({geoPos.coords.latitude.toFixed(5)}, {geoPos.coords.longitude.toFixed(5)})
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {geoStatus === 'pending' && t('qr.locationPending')}
+                  {geoStatus === 'failed' && t('qr.locationFailed')}
+                </span>
+                {geoStatus === 'failed' && (
+                  <button
+                    onClick={captureLocation}
+                    className="text-[11px] font-semibold underline shrink-0"
+                  >
+                    {t('qr.locationRetry')}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => handleStart('in')}
-                disabled={!diag?.isOk}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:bg-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white font-semibold transition-colors min-w-[160px]"
+                disabled={!diag?.isOk || !gateReady}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 text-slate-900 dark:text-white font-semibold transition-colors min-w-[160px]"
               >
                 <LogIn size={18} />
                 {t('qr.actionIn')}
               </button>
               <button
                 onClick={() => handleStart('out')}
-                disabled={!diag?.isOk}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:bg-slate-200 dark:bg-zinc-700 disabled:cursor-not-allowed text-slate-900 dark:text-white font-semibold transition-colors min-w-[160px]"
+                disabled={!diag?.isOk || !gateReady}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:bg-slate-200 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 text-slate-900 dark:text-white font-semibold transition-colors min-w-[160px]"
               >
                 <LogOut size={18} />
                 {t('qr.actionOut')}
               </button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-zinc-500 mt-4 flex items-center justify-center gap-1">
-              <MapPin size={12} /> {t('qr.gettingLocation')}
-            </p>
+            {diag?.isOk && !gateReady && (
+              <p className="text-xs text-amber-400 mt-4 flex items-center justify-center gap-1">
+                <AlertTriangle size={12} /> {t('qr.gateHint')}
+              </p>
+            )}
 
             {/* Ortam tanılaması */}
             {diag && (

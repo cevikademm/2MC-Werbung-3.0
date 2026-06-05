@@ -48,6 +48,7 @@ export interface NotifyEventPayload {
   end_time?: string;
   total_hours?: number;
   date?: string;
+  note?: string;
   // task_activity (görev işlemleri) için ek alanlar
   task_action?: TaskActionKind;
   task_title?: string;
