@@ -130,10 +130,10 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     icon:
       payload.icon ||
-      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png',
+      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo4.png',
     badge:
       payload.badge ||
-      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png',
+      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo4.png',
     tag: payload.tag || 'bac-handels-notification',
     requireInteraction: payload.requireInteraction === true,
     vibrate: payload.vibrate || [120, 60, 120],

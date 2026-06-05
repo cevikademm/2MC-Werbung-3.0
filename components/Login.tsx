@@ -115,11 +115,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                  <div className="min-h-full w-full flex items-center justify-center p-4">
                      <div className="w-full max-w-md relative z-10 my-8">
                         <div className="text-center mb-10">
-                            <div className="inline-flex items-center justify-center w-72 h-24 rounded-xl bg-white border border-slate-200 mb-6 shadow-xl shadow-indigo-900/20 px-5 py-3">
+                            <div className="inline-flex items-center justify-center w-32 h-32 rounded-2xl bg-transparent mb-6 drop-shadow-[0_8px_30px_rgba(38,40,112,0.35)]">
                                  <img
-                                    src={BAC_LOGO_URL}
+                                    src="/logo4.png"
                                     alt="2MC Werbung Logo"
-                                    className="max-w-full max-h-full object-contain"
+                                    className="w-full h-full object-contain"
                                     referrerPolicy="no-referrer"
                                  />
                             </div>
