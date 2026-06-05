@@ -403,8 +403,8 @@ BEGIN
   AND (
     -- Bcrypt hash karşılaştırma
     (password LIKE '$2a$%' OR password LIKE '$2b$%') AND password = crypt(user_password, password)
-    -- Düz metin karşılaştırma (henüz hash'lenmemiş şifreler)
-    OR (password NOT LIKE '$2a$%' AND password NOT LIKE '$2b$%' AND password = user_password)
+    -- Düz metin karşılaştırma (henüz hash'lenmemiş şifreler) — büyük/küçük harf duyarsız
+    OR (password NOT LIKE '$2a$%' AND password NOT LIKE '$2b$%' AND LOWER(password) = LOWER(user_password))
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -438,8 +438,8 @@ BEGIN
             RETURN FALSE;
         END IF;
     ELSE
-        -- Düz metin karşılaştırma (eski/yeni eklenen kullanıcılar için)
-        IF v_stored_password != p_current_password THEN
+        -- Düz metin karşılaştırma (eski/yeni eklenen kullanıcılar için) — büyük/küçük harf duyarsız
+        IF LOWER(v_stored_password) != LOWER(p_current_password) THEN
             RETURN FALSE;
         END IF;
     END IF;
@@ -463,7 +463,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION admin_reset_password(
     p_admin_id TEXT,
     p_target_user_id TEXT,
-    p_new_password TEXT DEFAULT 'Bac123+'
+    p_new_password TEXT DEFAULT '2mc123'
 )
 RETURNS BOOLEAN AS $$
 DECLARE

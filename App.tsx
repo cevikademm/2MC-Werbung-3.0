@@ -171,7 +171,7 @@ const Settings = ({ currentUser, onUpdateUser }: { currentUser: Employee | null,
             // Doğrudan profiles tablosunu güncelle (Admin RLS politikası ile)
             const { error } = await supabase
                 .from('profiles')
-                .update({ password: 'Bac123+', updated_at: new Date().toISOString() })
+                .update({ password: '2mc123', updated_at: new Date().toISOString() })
                 .eq('id', selectedEmployeeId);
 
             if (error) throw error;
@@ -208,7 +208,7 @@ const Settings = ({ currentUser, onUpdateUser }: { currentUser: Employee | null,
         try {
             const { error } = await supabase
                 .from('profiles')
-                .update({ password: 'Bac123+', updated_at: new Date().toISOString() })
+                .update({ password: '2mc123', updated_at: new Date().toISOString() })
                 .neq('id', currentUser?.id || '');
 
             if (error) throw error;

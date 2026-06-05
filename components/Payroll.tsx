@@ -594,7 +594,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
       try {
           if (selectedEmployeeId === 'NEW') {
               // Supabase Insert Denemesi - varsayılan şifre ile
-              const defaultPassword = 'Bac123+';
+              const defaultPassword = '2mc123';
               const { data, error } = await supabase.from('profiles').insert([{ ...dbData, password: defaultPassword }]).select();
 
               if(error) throw error;
@@ -634,7 +634,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
           // --- FALLBACK: YEREL KAYIT ---
           if (selectedEmployeeId === 'NEW') {
               const tempId = `local_${Date.now()}`;
-              const defaultPassword = 'Bac123+';
+              const defaultPassword = '2mc123';
               const newEmp = { ...editForm, id: tempId } as Employee;
               setEmployees([...employees, newEmp]);
               setSelectedEmployeeId(tempId);
