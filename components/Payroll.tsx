@@ -8,6 +8,7 @@ import { useLanguage } from '../lib/i18n';
 import { GlowingEffect } from './ui/glowing-effect';
 import { notifyEvent } from '../lib/notifyEvent';
 import { canSeeDeviceInfo, formatHoursHumanTR } from '../lib/utils';
+import CostAnalysis, { Employee as CAEmployee, WorkLog as CAWorkLog } from './CostAnalysis';
 
 // QR sayfa yuklenirken patlamasin diye lazy yukleniyor (zxing/browser
 // production minify'da top-level import edilince mangled constructor hatasi veriyordu).
@@ -1088,149 +1089,53 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
 
   // --- RENDERERS ---
 
-  // 1. FINANCIAL CONTENT (NEW TAB)
+  // Finansal Özet (FINANCIAL sekmesi): tüm şirket maliyet analizi
+  // (CostAnalysis komponenti). Eski kişi-bazlı maaş kartı kaldırıldı,
+  // yerine genel KPI'lar + lokasyon/personel barları + günlük döküm geldi.
   const renderFinancialContent = () => {
-      if (!targetEmployee) return <div className="h-full flex items-center justify-center text-slate-500 dark:text-zinc-500"><p>{t('pay.selectStaff')}</p></div>;
-      
-      return (
-          // MODIFIED: Changed justify-start md:justify-center to justify-start and items-stretch to force full width
-          // Mobil: alt nav bar (h-16 + güvenli alan) içeriği örtmesin diye pb-28 verildi.
-          <div className="h-full flex flex-col items-stretch justify-start p-4 pb-28 md:p-6 md:pb-6 bg-slate-50 dark:bg-zinc-950 overflow-y-auto overscroll-contain">
-              {/* MODIFIED: Removed max-w-lg to allow full width */}
-              <div className="w-full bg-white dark:bg-gradient-to-br dark:from-zinc-900 dark:to-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden relative">
-                  {/* Decorative Background — sadece dark modda görünür (light'ta tamamen beyaz kart) */}
-                  <div className="hidden dark:block absolute top-0 right-0 w-64 h-64 bg-emerald-900/10 rounded-full blur-[80px] pointer-events-none"></div>
-                  
-                  <div className="p-8 relative z-10">
-                      {/* Header */}
-                      <div className="flex items-center gap-5 border-b border-slate-200 dark:border-zinc-800 pb-6 mb-6">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-900/40">
-                              <Wallet size={32} className="text-slate-900 dark:text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                              <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{t('pay.tabFinancial')}</h2>
-                              <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1">
-                                  <span className="text-emerald-400 font-medium">{t('pay.weeklyPeriod')}</span> • {targetEmployee.name}
-                              </p>
-                          </div>
-                      </div>
+    const allEmps: CAEmployee[] = [...employees, ...adminEmployees].map(e => ({
+      id: e.id,
+      name: e.name,
+      role: e.role,
+      email: e.email,
+      hourlyRate: e.hourlyRate,
+      // DB'de henüz monthly_net_salary / salary_history kolonları yok.
+      // Eklenince adapter buradan beslenir.
+      monthly_net_salary: 0,
+      salary_history: undefined,
+    }));
+    const allLogs: CAWorkLog[] = timeLogs.map(l => ({
+      id: l.id,
+      employeeId: l.employeeId,
+      date: l.date,
+      startTime: l.startTime,
+      endTime: l.endTime,
+      breakMinutes: l.breakDuration,
+      netHours: l.totalHours,
+      location: l.branch || l.location || '',
+      description: l.description || '',
+      status:
+        l.status === 'Onaylandı' ? 'approved'
+        : l.status === 'Reddedildi' ? 'rejected'
+        : 'pending',
+    }));
 
-                      {/* Hafta navigasyonu — Vardiya Planı sekmesindeki ile aynı UX */}
-                      <div className="flex items-center justify-between gap-2 mb-6 p-2 bg-white dark:bg-zinc-900/40 rounded-xl border border-slate-200 dark:border-zinc-800">
-                          <button onClick={() => handleWeekShift(-1)} className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" aria-label={t('pay.prevWeek')}>
-                              <ChevronLeft size={18} />
-                          </button>
-                          <div className="flex-1 text-center min-w-0">
-                              <div className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                                  {formatDate(fmtDate(currentWeekStart), { day: 'numeric', month: 'short' })} – {formatDate(fmtDate(currentWeekEnd), { day: 'numeric', month: 'short', year: 'numeric' })}
-                              </div>
-                              <button onClick={() => handleWeekShift(0)} className="text-[10px] uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors mt-0.5">
-                                  {t('pay.thisWeek')}
-                              </button>
-                          </div>
-                          <button onClick={() => handleWeekShift(1)} className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" aria-label={t('pay.nextWeek')}>
-                              <ChevronRight size={18} />
-                          </button>
-                      </div>
-
-                      {/* Stats Grid — Bordro'da onaylanan saatler */}
-                      <div className="space-y-6">
-                          <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 bg-emerald-900/10 rounded-xl border border-emerald-500/20">
-                                  <p className="text-xs text-emerald-400/80 mb-1">{t('pay.approvedHoursWeek')}</p>
-                                  <p className="text-xl font-bold text-emerald-300">{formatHoursHumanTR(plannedPayrollStats.approvedHours)}</p>
-                              </div>
-                              <div className="p-4 bg-white dark:bg-zinc-900/50 rounded-xl border border-slate-200 dark:border-zinc-800">
-                                  <p className="text-xs text-slate-500 dark:text-zinc-500 mb-1">{t('pay.shiftCount')}</p>
-                                  <p className="text-xl font-bold text-slate-900 dark:text-white">{plannedPayrollStats.shiftCount}</p>
-                              </div>
-                          </div>
-
-                          {/* Onay bekleyen kayıt uyarısı — admin onaylayınca otomatik toplama dahil olur */}
-                          {pendingLogsCount > 0 && (
-                              <div className="p-3 bg-amber-900/10 border border-amber-500/30 rounded-xl flex items-center gap-2 text-xs text-amber-300">
-                                  <AlertTriangle size={14} className="shrink-0" />
-                                  <span>
-                                      {t('pay.pendingNotice').replace('{count}', String(pendingLogsCount))}
-                                  </span>
-                              </div>
-                          )}
-
-                          <div className="p-5 bg-white dark:bg-zinc-900/30 rounded-xl border border-slate-200 dark:border-zinc-800 space-y-3">
-                              <div className="flex justify-between items-center text-sm">
-                                  <span className="text-slate-600 dark:text-zinc-400">{t('pay.hourlyRate')}</span>
-                                  <span className="text-slate-900 dark:text-white font-medium">€{(targetEmployee.hourlyRate || 0).toFixed(2)}</span>
-                              </div>
-                              <div className="text-[11px] text-slate-500 dark:text-zinc-500 italic pt-1 border-t border-slate-200 dark:border-zinc-800/60">
-                                  {t('pay.basedOnApprovedLogs')}
-                              </div>
-                          </div>
-
-                          <div className="border-t border-dashed border-slate-200 dark:border-zinc-800 pt-6">
-                              <div className="flex justify-between items-end">
-                                  <span className="text-sm font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">{t('pay.weeklyGross')}</span>
-                                  <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">€{(plannedPayrollStats.grossPay || 0).toFixed(2)}</span>
-                              </div>
-                              {/* Tüm zamanlar onaylı toplamı — kıyas için */}
-                              {plannedPayrollStats.totalApprovedCount > 0 && (
-                                  <div className="flex justify-between items-center mt-2 text-[11px] text-slate-500 dark:text-zinc-500">
-                                      <span>{t('pay.totalApprovedAllTime')}</span>
-                                      <span className="font-medium tabular-nums">{formatHoursHumanTR(plannedPayrollStats.totalApprovedHours)} · €{(plannedPayrollStats.totalApprovedGross || 0).toFixed(2)}</span>
-                                  </div>
-                              )}
-                          </div>
-
-                          {/* Sadece seçili haftadaki kayıtlar — onaylı, bekleyen, reddedilen tek liste; toplama yalnızca 'Onaylandı' girer. */}
-                          <div className="pt-4">
-                              <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2 font-bold flex items-center justify-between">
-                                  <span>{t('pay.workHistoryAll')} · {weeklyLogs.length}</span>
-                                  <span className="text-emerald-400/80 normal-case font-medium">{weeklyApprovedLogs.length} {t('pay.approvedLower')}</span>
-                              </div>
-                              {weeklyLogs.length === 0 ? (
-                                  <div className="p-4 bg-white dark:bg-zinc-900/40 rounded-lg border border-slate-200 dark:border-zinc-800 text-xs text-slate-500 dark:text-zinc-500 text-center italic">
-                                      {t('pay.noLogsAtAll')}
-                                  </div>
-                              ) : (
-                                  <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950/40 divide-y divide-zinc-800/60 md:max-h-[360px] md:overflow-y-auto md:custom-scrollbar">
-                                      {weeklyLogs.map((l: TimeLog, i: number) => {
-                                          const inCurrentWeek = weekDates.includes(l.date);
-                                          const isApproved = l.status === 'Onaylandı';
-                                          const isRejected = l.status === 'Reddedildi';
-                                          // Approved + bu hafta → yeşil vurgu (haftalık ödemeye giren)
-                                          // Approved + diğer hafta → nötr ama tutar yeşil
-                                          // Bekleyen → genel sönük + amber badge
-                                          // Reddedilen → kırmızı badge, üstü çizili
-                                          const rowBg = isApproved && inCurrentWeek ? 'bg-emerald-900/10' : !isApproved && !isRejected ? 'bg-amber-900/5' : '';
-                                          const dateColor = isApproved && inCurrentWeek ? 'text-emerald-300' : isRejected ? 'text-slate-400 dark:text-zinc-600 line-through' : isApproved ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-600 dark:text-zinc-400';
-                                          const hourColor = !isApproved ? 'text-slate-500 dark:text-zinc-500' : (inCurrentWeek ? 'text-emerald-300' : 'text-emerald-400/80');
-                                          return (
-                                              <div key={`${l.id}-${i}`} className={`flex items-center justify-between px-3 py-2 text-xs gap-2 ${rowBg}`}>
-                                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                      <span className={`font-medium tabular-nums w-20 shrink-0 ${dateColor}`}>{formatDate(l.date, { weekday: 'short', day: '2-digit', month: 'short' })}</span>
-                                                      <span className="text-indigo-400 font-mono shrink-0">{l.startTime || '—'}–{l.endTime || '—'}</span>
-                                                      <span className="text-slate-500 dark:text-zinc-500 truncate">{l.branch}</span>
-                                                      {/* Status badge */}
-                                                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide shrink-0 ${
-                                                          isApproved ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/50'
-                                                          : isRejected ? 'bg-red-900/20 text-red-400 border border-red-700/40'
-                                                          : 'bg-amber-900/20 text-amber-400 border border-amber-700/40'
-                                                      }`}>{l.status}</span>
-                                                  </div>
-                                                  <span className={`font-bold tabular-nums shrink-0 ${hourColor}`}>{formatHoursHumanTR(l.totalHours)}</span>
-                                              </div>
-                                          );
-                                      })}
-                                  </div>
-                              )}
-                              <div className="text-[10px] text-slate-400 dark:text-zinc-600 mt-2 italic">
-                                  {t('pay.totalsApprovedOnly')}
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      );
+    return (
+      <div className="h-full overflow-y-auto overscroll-contain bg-slate-50 dark:bg-zinc-950 p-4 pb-28 md:p-6 md:pb-6">
+        <CostAnalysis
+          employees={allEmps}
+          workLogs={allLogs}
+          isAdmin={currentUser.role === Role.ADMIN}
+          currency="€"
+          locale="tr-TR"
+          onUpdateMonthlySalary={async () => {
+            alert(
+              'Aylık net maaş özelliği şu an aktif değil.\nVeritabanı kolonu (monthly_net_salary) eklendikten sonra kullanılabilir olacak.'
+            );
+          }}
+        />
+      </div>
+    );
   };
 
   const renderStaffContent = () => {
