@@ -354,35 +354,38 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
       return date;
   };
 
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getMonday(new Date()));
+  // Aylık navigasyon: seçili ayın 1. günü.
+  const [currentMonthStart, setCurrentMonthStart] = useState<Date>(() => {
+      const n = new Date();
+      return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
   const fmtDate = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const currentWeekEnd = useMemo(() => {
-      const e = new Date(currentWeekStart);
-      e.setDate(e.getDate() + 6);
-      return e;
-  }, [currentWeekStart]);
+  const currentMonthEnd = useMemo(() => {
+      // ayın son günü = bir sonraki ayın 0. günü (otomatik clamp)
+      return new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 0);
+  }, [currentMonthStart]);
 
-  const handleWeekShift = (delta: -1 | 0 | 1) => {
+  const handleMonthShift = (delta: -1 | 0 | 1) => {
       if (delta === 0) {
-          setCurrentWeekStart(getMonday(new Date()));
+          const n = new Date();
+          setCurrentMonthStart(new Date(n.getFullYear(), n.getMonth(), 1));
           return;
       }
-      const next = new Date(currentWeekStart);
-      next.setDate(next.getDate() + delta * 7);
-      setCurrentWeekStart(getMonday(next));
+      const next = new Date(currentMonthStart);
+      next.setMonth(next.getMonth() + delta);
+      setCurrentMonthStart(new Date(next.getFullYear(), next.getMonth(), 1));
   };
 
-  // Haftanın 7 günü için "YYYY-MM-DD" string'leri (filtre için)
-  const weekDates = useMemo(() => {
+  // Seçili ayın tüm günleri için "YYYY-MM-DD" string'leri (filtre için)
+  const monthDates = useMemo(() => {
       const arr: string[] = [];
-      for (let i = 0; i < 7; i++) {
-          const d = new Date(currentWeekStart);
-          d.setDate(d.getDate() + i);
-          arr.push(fmtDate(d));
+      const daysInMonth = currentMonthEnd.getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+          arr.push(fmtDate(new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth(), i)));
       }
       return arr;
-  }, [currentWeekStart]);
+  }, [currentMonthStart, currentMonthEnd]);
 
   // targetEmployee'in TÜM kayıtları (Onaylandı + Bekliyor + Reddedildi) — alt listede gösterilir.
   const allEmployeeLogs = useMemo(() => {
@@ -398,16 +401,16 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
       [allEmployeeLogs]
   );
 
-  // Seçili haftadaki onaylanmış kayıtlar (haftalık ödeme stat kartı için)
-  const weeklyApprovedLogs = useMemo(
-      () => allApprovedLogs.filter(l => weekDates.includes(l.date)),
-      [allApprovedLogs, weekDates]
+  // Seçili aydaki onaylanmış kayıtlar (aylık ödeme stat kartı için)
+  const monthlyApprovedLogs = useMemo(
+      () => allApprovedLogs.filter(l => monthDates.includes(l.date)),
+      [allApprovedLogs, monthDates]
   );
 
-  // Bordro / Çalışma Geçmişi: seçili haftadaki TÜM kayıtlar (status filtresiz)
-  const weeklyLogs = useMemo(
-      () => allEmployeeLogs.filter(l => weekDates.includes(l.date)),
-      [allEmployeeLogs, weekDates]
+  // Bordro / Çalışma Geçmişi: seçili aydaki TÜM kayıtlar (status filtresiz)
+  const monthlyLogs = useMemo(
+      () => allEmployeeLogs.filter(l => monthDates.includes(l.date)),
+      [allEmployeeLogs, monthDates]
   );
 
   // Personelin shift_schedules'taki tüm haftalardaki atamaları — Çalışma Geçmişi
@@ -473,14 +476,14 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
   );
 
   const plannedPayrollStats = useMemo(() => {
-      const approvedHours = weeklyApprovedLogs.reduce((acc, l) => acc + (l.totalHours || 0), 0);
-      const shiftCount = weeklyApprovedLogs.length;
+      const approvedHours = monthlyApprovedLogs.reduce((acc, l) => acc + (l.totalHours || 0), 0);
+      const shiftCount = monthlyApprovedLogs.length;
       const hourlyRate = targetEmployee?.hourlyRate || 0;
       const grossPay = approvedHours * hourlyRate;
       const totalApprovedHours = allApprovedLogs.reduce((acc, l) => acc + (l.totalHours || 0), 0);
       const totalApprovedGross = totalApprovedHours * hourlyRate;
       return { approvedHours, shiftCount, grossPay, totalApprovedHours, totalApprovedGross, totalApprovedCount: allApprovedLogs.length };
-  }, [weeklyApprovedLogs, allApprovedLogs, targetEmployee]);
+  }, [monthlyApprovedLogs, allApprovedLogs, targetEmployee]);
 
 
   // --- CRUD İŞLEMLERİ ---
@@ -1617,17 +1620,17 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                             <ChevronLeft size={20} />
                         </button>
 
-                        {/* Haftalık navigasyon — Vardiya Planı sekmesindeki ile aynı UX */}
+                        {/* Aylık navigasyon */}
                         <div className="flex flex-1 md:flex-none items-center justify-between bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg p-1 w-full md:min-w-[260px]">
-                            <button onClick={() => handleWeekShift(-1)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400" aria-label={t('pay.prevWeek')}><ChevronLeft size={20}/></button>
+                            <button onClick={() => handleMonthShift(-1)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400" aria-label={t('pay.prevMonth')}><ChevronLeft size={20}/></button>
                             <button
-                                onClick={() => handleWeekShift(0)}
-                                className="flex-1 text-center px-2 md:px-3 text-xs md:text-sm font-bold text-slate-900 dark:text-white min-w-[140px] md:min-w-[200px] hover:text-indigo-300 transition-colors"
-                                title={t('pay.thisWeek')}
+                                onClick={() => handleMonthShift(0)}
+                                className="flex-1 text-center px-2 md:px-3 text-xs md:text-sm font-bold text-slate-900 dark:text-white min-w-[140px] md:min-w-[200px] hover:text-indigo-300 transition-colors capitalize"
+                                title={t('pay.thisMonth')}
                             >
-                                {formatDate(fmtDate(currentWeekStart), { day: 'numeric', month: 'short' })} – {formatDate(fmtDate(currentWeekEnd), { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {formatDate(fmtDate(currentMonthStart), { month: 'long', year: 'numeric' })}
                             </button>
-                            <button onClick={() => handleWeekShift(1)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400" aria-label={t('pay.nextWeek')}><ChevronRight size={20}/></button>
+                            <button onClick={() => handleMonthShift(1)} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-600 dark:text-zinc-400" aria-label={t('pay.nextMonth')}><ChevronRight size={20}/></button>
                         </div>
                      </div>
                     <div className="hidden md:block"><h2 className="text-lg font-bold text-slate-900 dark:text-white">{targetEmployee.name}</h2></div>
@@ -1646,7 +1649,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                 <div className="flex-1 w-full overflow-y-auto min-h-0 p-4 pb-28 md:p-6 md:pb-6">
                     <h3 className="text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-6 flex items-center gap-2"><Clock size={16}/> {t('pay.workHistory')}</h3>
                     <div className="relative ml-3 space-y-8 border-l border-slate-200 dark:border-zinc-800">
-                        {weeklyLogs.length===0 ? <span className="ml-6 text-slate-500 dark:text-zinc-500 text-sm">{t('pay.noRecord')}</span> : weeklyLogs.map(log=>(
+                        {monthlyLogs.length===0 ? <span className="ml-6 text-slate-500 dark:text-zinc-500 text-sm">{t('pay.noRecord')}</span> : monthlyLogs.map(log=>(
                             <div key={log.id} className="relative ml-6 group">
                                 <span className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 border-slate-200 dark:border-zinc-900 ${log.status==='Onaylandı'?'bg-green-500':log.status==='Reddedildi'?'bg-red-500':'bg-amber-500'}`}></span>
                                 <div className="bg-white dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 rounded-xl p-4">
