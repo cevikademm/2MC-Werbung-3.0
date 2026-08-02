@@ -41,7 +41,8 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-const BAC_LOGO_URL = "https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png";
+// Logo public/ altından servis edilir — harici CDN/Storage bağımlılığı yok.
+const BAC_LOGO_URL = "/logo_werbung.png";
 
 // 2MC Werbung için gizlenen sekmeler. Geri açmak için ilgili id'yi bu Set'ten çıkar.
 // Etki: Mobile header (üst), Desktop sidebar, Mobile bottom nav — her üçünden gizlenir.

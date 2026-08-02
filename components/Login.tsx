@@ -11,7 +11,8 @@ interface LoginProps {
     onLogin: (user: Employee) => void;
 }
 
-const BAC_LOGO_URL = "https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo_werbung%20(1).png";
+// Logo public/ altından servis edilir — harici CDN/Storage bağımlılığı yok.
+const BAC_LOGO_URL = "/logo_werbung.png";
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
     // Varsayılan değerler boşaltıldı

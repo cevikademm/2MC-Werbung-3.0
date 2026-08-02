@@ -22,8 +22,11 @@ supabase/.temp/
 # Claude Code lokal kilit dosyası
 .claude/scheduled_tasks.lock
 
-# Lokal logo dosyaları (Storage'a yüklendi, repo'ya gerek yok)
+# Kök dizindeki lokal logo çalışma kopyaları repo'ya girmez.
+# public/ altındakiler uygulamanın gerçek asset'leridir (favicon, PWA ikonu,
+# giriş/header logosu) — build'e dahil olmaları gerektiği için istisna tutulur.
 logo_werbung*.png
+!public/logo_werbung.png
 logo_2mc_preview.png
 
 # Large output files
@@ -44,5 +47,7 @@ shannon/.app_pid
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
 
 .vercel

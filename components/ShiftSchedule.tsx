@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { useTheme } from '../lib/theme';
 import { Branch, Employee, Role } from '../types';
 import { Save, ChevronLeft, ChevronRight, Copy, Plus, Trash2, Loader2, AlertTriangle, CheckCircle2, Lock, Send, Undo2, X } from 'lucide-react';
@@ -287,7 +288,7 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
           alert(t('shift.publishEmptyError'));
           return;
       }
-      if (!confirm(t('shift.publishConfirm'))) return;
+      if (!await confirmDialog({ message: t('shift.publishConfirm') })) return;
       setPublishLoading(true);
       try {
           const { data, error } = await supabase
@@ -326,7 +327,7 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
 
   const unpublishWeek = async () => {
       if (!isAdmin || !publication) return;
-      if (!confirm(t('shift.unpublishConfirm'))) return;
+      if (!await confirmDialog({ message: t('shift.unpublishConfirm'), danger: true })) return;
       setPublishLoading(true);
       try {
           const { error } = await supabase
@@ -427,20 +428,22 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
   };
 
   // Çakışma uyarısı + onay; kullanıcı reddederse false dön.
-  const confirmIfConflict = (employeeId: string, dayIndex: number, timeLabel: string): boolean => {
+  const confirmIfConflict = async (employeeId: string, dayIndex: number, timeLabel: string): Promise<boolean> => {
       if (!employeeId) return true;
       const conflict = getConflict(employeeId, dayIndex, timeLabel);
       if (!conflict) return true;
       const empName = availableEmployees.find(e => e.id === employeeId)?.name || '';
-      return confirm(t('shift.conflictWarn').replace('{name}', empName).replace('{conflict}', conflict));
+      return confirmDialog({
+          message: t('shift.conflictWarn').replace('{name}', empName).replace('{conflict}', conflict),
+      });
   };
 
   // Hücreye yeni kişi ekle (zaten varsa eklemez)
-  const addAssignment = (rowId: string | undefined, dayIndex: number, employeeId: string) => {
+  const addAssignment = async (rowId: string | undefined, dayIndex: number, employeeId: string) => {
       if (!isAdmin || !employeeId) return;
       const row = rosterData.find(r => r.id === rowId);
       if (!row) return;
-      if (!confirmIfConflict(employeeId, dayIndex, row.timeLabel)) return;
+      if (!await confirmIfConflict(employeeId, dayIndex, row.timeLabel)) return;
       mutateCell(rowId, dayIndex, ids => ids.includes(employeeId) ? ids : [...ids, employeeId]);
   };
 
@@ -451,11 +454,11 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
   };
 
   // Hücredeki bir kişiyi başka biriyle değiştir (mevcut select onChange için)
-  const replaceAssignment = (rowId: string | undefined, dayIndex: number, oldId: string, newId: string) => {
+  const replaceAssignment = async (rowId: string | undefined, dayIndex: number, oldId: string, newId: string) => {
       if (!isAdmin) return;
       const row = rosterData.find(r => r.id === rowId);
       if (!row) return;
-      if (newId && !confirmIfConflict(newId, dayIndex, row.timeLabel)) return;
+      if (newId && !await confirmIfConflict(newId, dayIndex, row.timeLabel)) return;
       mutateCell(rowId, dayIndex, ids => {
           if (!newId) return ids.filter(id => id !== oldId); // boş seçilirse kaldır
           // Sırayı koruyarak swap; yeni ID zaten varsa dedup için filtre
@@ -482,7 +485,7 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
 
   const deleteRow = async (rowId: string) => {
       if (!isAdmin) return;
-      if(!confirm(t('shift.deleteConfirm'))) return;
+      if(!await confirmDialog({ message: t('shift.deleteConfirm'), danger: true })) return;
       setRosterData(prev => prev.filter(r => r.id !== rowId));
       if (rowId && !rowId.startsWith('temp_')) await supabase.from('shift_schedules').delete().eq('id', rowId);
   };
@@ -496,7 +499,7 @@ const ShiftSchedule: React.FC<ShiftScheduleProps> = ({ currentUser }) => {
       if (!isAdmin) return;
       const nextWeekDate = new Date(currentWeekStart); nextWeekDate.setDate(nextWeekDate.getDate() + 7);
       const nextWeekKey = formatLocalDate(nextWeekDate);
-      if (confirm(t('shift.copyConfirm').replace('{date}', formatDate(nextWeekDate)))) {
+      if (await confirmDialog({ message: t('shift.copyConfirm').replace('{date}', formatDate(nextWeekDate)) })) {
           setIsLoading(true);
           try {
               await supabase.from('shift_schedules').delete().eq('week_start_date', nextWeekKey).eq('branch', String(activeBranch));

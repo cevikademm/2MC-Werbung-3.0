@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SalesLog, Employee, Role, Branch } from '../types';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { formatLocalDate, isUserOnShiftAt, formatTimeOfDay, canSeeOffShiftAlerts, compressImageToJpeg } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { Trophy, TrendingUp, ShoppingBag, MapPin, Award, Medal, Calendar, Package, Activity, BarChart3, ListTodo, User, Lock, EyeOff, Filter, ChevronDown, Clock, Tag, Send, Loader2, CheckCircle2, XCircle, Trash2, X, Star, Zap, Crown, Percent, Settings, AlertTriangle, Camera, Receipt, Upload } from 'lucide-react';
@@ -172,7 +173,7 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({ currentUser }) => {
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm(t('sales.deleteProductConfirm'))) return;
+        if (!await confirmDialog({ message: t('sales.deleteProductConfirm'), danger: true })) return;
         const { error } = await supabase.from('action_products').delete().eq('id', id);
         if (!error) {
             setActionProducts(actionProducts.filter(p => p.id !== id));
@@ -305,7 +306,7 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({ currentUser }) => {
     };
   
     const handleDeleteSale = async (id: string) => {
-        if(!confirm(t('sales.deleteConfirm'))) return;
+        if(!await confirmDialog({ message: t('sales.deleteConfirm'), danger: true })) return;
         try {
             await supabase.from('sales_logs').delete().eq('id', id);
             setSalesData(prev => prev.filter(l => l.id !== id));

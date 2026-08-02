@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, X, ShoppingBag, Clock, FileText, BarChart3, CheckCheck, Loader2, Inbox, AlarmClockOff, MessageSquare, XCircle } from 'lucide-react';
+import { Bell, X, ShoppingBag, Clock, FileText, BarChart3, CheckCheck, Loader2, Inbox, AlarmClockOff, MessageSquare, XCircle, UserPlus, TimerReset, CalendarX, BellRing } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { canSeeNotificationCenter } from '../constants';
 
@@ -39,6 +39,10 @@ const ICON_BY_TYPE: Record<string, { icon: React.ComponentType<{ size?: number; 
   auto_closed_shift: { icon: AlarmClockOff, color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
   new_message: { icon: MessageSquare, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' },
   qr_scan_error: { icon: XCircle, color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+  new_user: { icon: UserPlus, color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+  shift_overrun: { icon: TimerReset, color: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/30' },
+  missing_check_in: { icon: CalendarX, color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+  shift_reminder: { icon: BellRing, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
 };
 
 const formatRelative = (iso: string): string => {
@@ -166,6 +170,10 @@ const NotificationCenter: React.FC<Props> = ({ currentUserId, currentUserEmail, 
         if (rid === 'ALL') return true;
         if (rid === 'ADMIN_BOARD' && allowed) return true;
         return false;
+      }
+      // Kişisel hatırlatma (mesai saatini girmedin) → sadece ilgili personel görür
+      if (n.type === 'shift_reminder') {
+        return n.meta?.employee_id === currentUserId;
       }
       return allowed;
     });

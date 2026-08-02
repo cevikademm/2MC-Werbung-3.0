@@ -15,8 +15,28 @@
 // { "type":"non_kiosk_check", "employee_name":"Lada", "branch":"Dom",
 //   "action":"in" | "out" }
 //
-// Edge function admin kullanıcıların notification_prefs'ine bakar,
-// ilgili anahtar true ise send-push edge function'ını çağırır.
+// 4) Yeni personel kaydı:
+// { "type":"new_user", "employee_id":"...", "employee_name":"Lada",
+//   "email":"lada@...", "branch":"Dom", "role":"Personel", "actor_name":"Adem" }
+//
+// 5) Planlanan mesai aşımı:
+// { "type":"shift_overrun", "employee_id":"...", "employee_name":"Lada",
+//   "branch":"Dom", "date":"2026-08-02", "planned_start":"07:00",
+//   "planned_end":"15:00", "planned_hours":8, "actual_hours":9.6,
+//   "overrun_minutes":96 }
+//
+// 6) Mesai girişi yapılmadı (adminlere):
+// { "type":"missing_check_in", "employee_id":"...", "employee_name":"Lada",
+//   "branch":"Dom", "date":"2026-08-02", "planned_start":"07:00",
+//   "planned_end":"15:00", "late_minutes":20 }
+//
+// 7) Personele hatırlatma (kendisine gider):
+// { "type":"shift_reminder", "employee_id":"...", "employee_name":"Lada",
+//   "branch":"Dom", "planned_start":"07:00", "late_minutes":20 }
+//
+// Hedef kitle (AUDIENCE):
+//   'admin'    → notification_prefs[type] !== false olan Admin'lere gider.
+//   'employee' → yalnızca body.employee_id sahibine gider (kendi tercihine bakılır).
 // =============================================================
 
 // @ts-nocheck Deno
@@ -52,7 +72,11 @@ interface EventBody {
     | 'geofence_exit'
     | 'qr_scan_error'
     | 'qr_check'
-    | 'task_activity';
+    | 'task_activity'
+    | 'new_user'
+    | 'shift_overrun'
+    | 'missing_check_in'
+    | 'shift_reminder';
   employee_name?: string;
   employee_id?: string;
   branch?: string;
@@ -86,7 +110,35 @@ interface EventBody {
   task_title?: string;
   item_text?: string;
   actor_name?: string;
+  // new_user için ek alanlar
+  email?: string;
+  role?: string;
+  // shift_overrun / missing_check_in / shift_reminder için ek alanlar
+  planned_start?: string;
+  planned_end?: string;
+  planned_hours?: number;
+  actual_hours?: number;
+  overrun_minutes?: number;
+  late_minutes?: number;
+  // true ise notification_log kaydı atlanır — kaydı çağıran taraf
+  // (SQL trigger / cron) zaten kendisi açmıştır, çift satır olmasın.
+  skip_log?: boolean;
 }
+
+// Bildirim tipi → hedef kitle. Listede olmayan tipler 'admin' kabul edilir.
+const AUDIENCE: Record<string, 'admin' | 'employee'> = {
+  shift_reminder: 'employee',
+};
+
+// Dakikayı "1 sa 36 dk" biçimine çevirir
+const humanMinutes = (mins?: number): string => {
+  const m = Math.max(0, Math.round(mins ?? 0));
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  if (h > 0 && rest > 0) return `${h} sa ${rest} dk`;
+  if (h > 0) return `${h} sa`;
+  return `${rest} dk`;
+};
 
 // Bildirim gövdesi formatı: "SS, HH:MM, DD.MM.YYYY" (Europe/Berlin)
 const formatBerlin = (at?: string): string => {
@@ -211,6 +263,56 @@ const buildNotification = (e: EventBody): { title: string; body: string; url: st
         tag: `task-activity-${e.task_action || ''}-${e.task_title || ''}-${e.item_text || ''}`,
       };
     }
+    case 'new_user': {
+      const who = e.actor_name ? ` • ekleyen: ${e.actor_name}` : '';
+      const mail = e.email ? ` — ${e.email}` : '';
+      const role = e.role ? ` (${e.role})` : '';
+      const branch = e.branch ? ` • şube: ${e.branch}` : '';
+      return {
+        title: '👤 Yeni Personel Kaydı',
+        body: `${e.employee_name || 'Yeni personel'}${role}${mail}${branch}${who}`,
+        url: '/payroll',
+        tag: `new-user-${e.employee_id || e.email || e.employee_name || ''}`,
+      };
+    }
+    case 'shift_overrun': {
+      const plan =
+        e.planned_start || e.planned_end
+          ? `plan ${e.planned_start || '—'}–${e.planned_end || '—'}`
+          : 'plan yok';
+      const planned =
+        typeof e.planned_hours === 'number' ? ` (${e.planned_hours.toFixed(2)} sa)` : '';
+      const actual =
+        typeof e.actual_hours === 'number' ? `${e.actual_hours.toFixed(2)} sa` : '—';
+      return {
+        title: '⏱️ Planlanan Mesai Aşımı',
+        body: `${e.employee_name || 'Personel'} (${e.branch || '-'}) — ${plan}${planned}, çalışılan ${actual} • aşım +${humanMinutes(e.overrun_minutes)}`,
+        url: '/payroll',
+        tag: `shift-overrun-${e.employee_id || ''}-${e.date || ''}`,
+      };
+    }
+    case 'missing_check_in': {
+      const plan = e.planned_start
+        ? `${e.planned_start}${e.planned_end ? `–${e.planned_end}` : ''}`
+        : '—';
+      return {
+        title: '🚫 Mesai Girişi Yapılmadı',
+        body: `${e.employee_name || 'Personel'} (${e.branch || '-'}) — ${plan} vardiyası başladı, ${humanMinutes(e.late_minutes)} geçti, hâlâ giriş yok.`,
+        url: '/payroll',
+        tag: `missing-checkin-${e.employee_id || ''}-${e.date || ''}`,
+      };
+    }
+    case 'shift_reminder': {
+      const plan = e.planned_start
+        ? `${e.planned_start}${e.planned_end ? `–${e.planned_end}` : ''}`
+        : '—';
+      return {
+        title: '⏰ Mesai Saatini Girmeyi Unutma',
+        body: `${plan} vardiyan ${humanMinutes(e.late_minutes)} önce başladı${e.branch ? ` (${e.branch})` : ''}. Lütfen mesai saat girişini yap.`,
+        url: '/payroll',
+        tag: `shift-reminder-${e.employee_id || ''}-${e.date || ''}`,
+      };
+    }
     default:
       return { title: '2MC Werbung', body: '', url: '/dashboard', tag: 'event' };
   }
@@ -240,29 +342,52 @@ serve(async (req) => {
     }
   }
 
-  // 1) İlgili tercihi açık olan adminleri bul
-  const { data: admins, error: adminsErr } = await admin
-    .from('profiles')
-    .select('id, notification_prefs')
-    .eq('role', 'Admin');
-
-  if (adminsErr) return json(500, { error: adminsErr.message });
-
+  // 1) Hedef kullanıcıları bul (audience'a göre)
   const prefKey = body.type;
-  const targetIds = (admins || [])
-    .filter((a: any) => a.notification_prefs?.[prefKey] !== false)
-    .map((a: any) => a.id);
+  const audience = AUDIENCE[body.type] || 'admin';
+  let targetIds: string[] = [];
+
+  if (audience === 'employee') {
+    // Kişisel hatırlatma → sadece ilgili personele, kendi tercihine bakarak
+    if (!body.employee_id) {
+      return json(400, { error: 'employee_id zorunlu (audience=employee)' });
+    }
+    const { data: emp, error: empErr } = await admin
+      .from('profiles')
+      .select('id, notification_prefs')
+      .eq('id', body.employee_id)
+      .maybeSingle();
+
+    if (empErr) return json(500, { error: empErr.message });
+    if (!emp) return json(200, { sent: 0, skipped: 'employee_not_found', pref: prefKey });
+    if (emp.notification_prefs?.[prefKey] === false) {
+      return json(200, { sent: 0, skipped: 'employee_pref_off', pref: prefKey });
+    }
+    targetIds = [emp.id];
+  } else {
+    const { data: admins, error: adminsErr } = await admin
+      .from('profiles')
+      .select('id, notification_prefs')
+      .eq('role', 'Admin');
+
+    if (adminsErr) return json(500, { error: adminsErr.message });
+
+    targetIds = (admins || [])
+      .filter((a: any) => a.notification_prefs?.[prefKey] !== false)
+      .map((a: any) => a.id);
+  }
 
   if (targetIds.length === 0) {
-    return json(200, { sent: 0, skipped: 'no_admin_with_pref', pref: prefKey });
+    return json(200, { sent: 0, skipped: 'no_target_with_pref', pref: prefKey, audience });
   }
 
   // 2) send-push edge function'ını çağır
   const notif = buildNotification(body);
   const sendUrl = `${SUPABASE_URL}/functions/v1/send-push`;
 
-  // 2a) Bildirim merkezine log kaydı (yetkili kullanıcılar dropdown'dan görür)
-  await admin.from('notification_log').insert({
+  // 2a) Bildirim merkezine log kaydı (yetkili kullanıcılar dropdown'dan görür).
+  //     skip_log=true → kaydı SQL tarafı (trigger/cron) zaten açtı.
+  if (body.skip_log !== true) await admin.from('notification_log').insert({
     type: body.type,
     title: notif.title,
     body: notif.body,
@@ -292,8 +417,33 @@ serve(async (req) => {
       task_title: body.task_title || null,
       item_text: body.item_text || null,
       actor_name: body.actor_name || null,
+      email: body.email || null,
+      role: body.role || null,
+      planned_start: body.planned_start || null,
+      planned_end: body.planned_end || null,
+      planned_hours: body.planned_hours ?? null,
+      actual_hours: body.actual_hours ?? null,
+      overrun_minutes: body.overrun_minutes ?? null,
+      late_minutes: body.late_minutes ?? null,
+      audience,
     },
   });
+
+  // 2b) send-push yetkisi: caller_user_id bir Admin olmalı. audience='employee'
+  //     olduğunda hedef personeldir, bu yüzden ayrıca bir admin id'si bulunur.
+  let callerId = targetIds[0];
+  if (audience === 'employee') {
+    const { data: anyAdmin } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('role', 'Admin')
+      .limit(1)
+      .maybeSingle();
+    if (!anyAdmin?.id) {
+      return json(200, { sent: 0, skipped: 'no_admin_for_push_auth', type: body.type });
+    }
+    callerId = anyAdmin.id;
+  }
 
   const resp = await fetch(sendUrl, {
     method: 'POST',
@@ -302,7 +452,7 @@ serve(async (req) => {
       authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
     body: JSON.stringify({
-      caller_user_id: targetIds[0], // admin yetkisi için (tek admin → admin_1)
+      caller_user_id: callerId, // send-push admin yetkisi için
       user_ids: targetIds,
       title: notif.title,
       body: notif.body,
@@ -313,5 +463,5 @@ serve(async (req) => {
   });
 
   const result = await resp.json().catch(() => ({}));
-  return json(200, { ok: true, type: body.type, target_count: targetIds.length, push: result });
+  return json(200, { ok: true, type: body.type, audience, target_count: targetIds.length, push: result });
 });

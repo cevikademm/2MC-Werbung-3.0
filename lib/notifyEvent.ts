@@ -16,7 +16,15 @@ export type NotifyEventType =
   | 'geofence_exit'
   | 'qr_scan_error'
   | 'qr_check'
-  | 'task_activity';
+  | 'task_activity'
+  // Yeni personel kaydı → adminlere
+  | 'new_user'
+  // Planlanan vardiya süresinin aşılması → adminlere
+  | 'shift_overrun'
+  // Vardiyası olduğu halde giriş yapmayan personel → adminlere
+  | 'missing_check_in'
+  // Personelin kendisine giden "mesai girişini unuttun" hatırlatması
+  | 'shift_reminder';
 
 export type TaskActionKind =
   | 'created'
@@ -54,6 +62,16 @@ export interface NotifyEventPayload {
   task_title?: string;
   item_text?: string;
   actor_name?: string;
+  // new_user (yeni personel kaydı) için ek alanlar
+  email?: string;
+  role?: string;
+  // shift_overrun / missing_check_in / shift_reminder için ek alanlar
+  planned_start?: string;   // 'HH:MM'
+  planned_end?: string;     // 'HH:MM'
+  planned_hours?: number;
+  actual_hours?: number;
+  overrun_minutes?: number;
+  late_minutes?: number;
 }
 
 export const notifyEvent = (payload: NotifyEventPayload): void => {

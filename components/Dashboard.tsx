@@ -6,6 +6,7 @@ import { AppNotification, Employee, Role, CalendarEvent, Branch, Task, Message, 
 import { isDualRoleAdmin } from '../constants';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { QR_ATTENDANCE_ENABLED } from '../lib/featureFlags';
 import { useTheme } from '../lib/theme';
 import { GlowingEffect } from './ui/glowing-effect';
 import { fetchShiftsForDate, ShiftWithStatus, STATUS_META } from '../lib/shiftStatus';
@@ -1250,10 +1251,15 @@ const Dashboard: React.FC<DashboardProps> = ({ notifications = [], currentUser, 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           
-          {/* COL 1: DAILY TIME ENTRY & SALES LEADERBOARD */}
+          {/* COL 1: DAILY TIME ENTRY & SALES LEADERBOARD
+              QR kartı gizliyken personel için bu kolonda hiçbir şey kalmıyor;
+              boş sütun bırakmamak için kolon tamamen render edilmiyor. */}
+          {(QR_ATTENDANCE_ENABLED || currentUser.role === Role.ADMIN) && (
           <div className="space-y-6">
               {/* QR İLE MESAİ GİRİŞİ — eski "Saat Girişi" kartının yerine.
-                  Tıklanınca payroll'a değil, doğrudan QR scanner modal'ı açılır. */}
+                  Tıklanınca payroll'a değil, doğrudan QR scanner modal'ı açılır.
+                  Şu an gizli: lib/featureFlags.ts → QR_ATTENDANCE_ENABLED. */}
+              {QR_ATTENDANCE_ENABLED && (
               <div
                   onClick={() => setShowQrModal(true)}
                   className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-gradient-to-br from-emerald-900/40 to-zinc-900 p-6 relative overflow-hidden group cursor-pointer hover:border-emerald-500/50 transition-all shadow-lg"
@@ -1273,6 +1279,7 @@ const Dashboard: React.FC<DashboardProps> = ({ notifications = [], currentUser, 
                       </button>
                   </div>
               </div>
+              )}
 
 
 
@@ -1317,9 +1324,10 @@ const Dashboard: React.FC<DashboardProps> = ({ notifications = [], currentUser, 
                 </div>
               )}
           </div>
+          )}
 
-          {/* COL 2: WORKLOAD & PRIORITY ANALYSIS */}
-          <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-6 flex flex-col relative lg:col-span-2">
+          {/* COL 2: WORKLOAD & PRIORITY ANALYSIS — sol kolon yoksa tam genişlik */}
+          <div className={`rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-6 flex flex-col relative ${(QR_ATTENDANCE_ENABLED || currentUser.role === Role.ADMIN) ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
 <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} inactiveZone={0.01} />
               <h3 className="text-sm font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-2 mb-4">
                   <BarChart3 size={16}/> {t('dash.workload')}
@@ -1349,7 +1357,7 @@ const Dashboard: React.FC<DashboardProps> = ({ notifications = [], currentUser, 
       </div>
 
       {/* QR MESAİ MODAL — Dashboard "QR ile Mesai" kartından açılır */}
-      {showQrModal && (
+      {QR_ATTENDANCE_ENABLED && showQrModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-zinc-800">

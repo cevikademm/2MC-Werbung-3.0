@@ -5,9 +5,11 @@ import { Search, Plus, Filter, Calculator, Save, Trash2, Phone, Mail, X, MapPin,
 import { includeAsPersonnel, isDualRoleAdmin, isRestrictedAdmin } from '../constants';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { GlowingEffect } from './ui/glowing-effect';
 import { notifyEvent } from '../lib/notifyEvent';
 import { canSeeDeviceInfo, formatHoursHumanTR } from '../lib/utils';
+import { QR_ATTENDANCE_ENABLED } from '../lib/featureFlags';
 import CostAnalysis, { Employee as CAEmployee, WorkLog as CAWorkLog } from './CostAnalysis';
 
 // QR sayfa yuklenirken patlamasin diye lazy yukleniyor (zxing/browser
@@ -21,6 +23,11 @@ type Tab = 'STAFF' | 'MONTHLY' | 'FINANCIAL' | 'APPROVALS';
 
 // Süper admin: tüm onay bekleyenleri görebilir
 const SUPER_ADMIN_EMAIL = 'cevikademm@gmail.com';
+
+// Süper admin sistem kurucusudur — çalışan da patron da değildir.
+// Bu yüzden maliyet/maaş hesaplarında personel olarak sayılmaz.
+const isSuperAdminAccount = (email?: string | null): boolean =>
+  !!email && email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
 
 interface PayrollProps {
     currentUser: Employee;
@@ -509,9 +516,9 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
     fetchTransferHistory();
   }, [selectedEmployeeId]);
 
-  const handleSelectEmployee = (id: string) => {
+  const handleSelectEmployee = async (id: string) => {
     if(isEditing && selectedEmployeeId !== id) {
-        if (!window.confirm(t('pay.unsavedChanges'))) return;
+        if (!await confirmDialog({ message: t('pay.unsavedChanges') })) return;
     }
     setIsEditing(false);
     setEditForm({});
@@ -609,6 +616,18 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                   const newEmp = { ...editForm, id: data[0].id } as Employee;
                   setEmployees([...employees, newEmp]);
                   setSelectedEmployeeId(data[0].id);
+
+                  // Push: yeni personel kaydı → adminlere (notification_prefs.new_user)
+                  notifyEvent({
+                      type: 'new_user',
+                      employee_id: data[0].id,
+                      employee_name: editForm.name,
+                      email: editForm.email,
+                      role: editForm.role,
+                      branch: editForm.branch,
+                      actor_name: currentUser?.name,
+                      at: new Date().toISOString(),
+                  });
 
                   // Bildirim: Yeni personel eklendi ve şifre gösterildi
                   onNotify({
@@ -748,7 +767,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
   };
 
   const handleDelete = async () => {
-      if(!confirm(t('pay.deleteConfirm'))) return;
+      if(!await confirmDialog({ message: t('pay.deleteConfirm'), danger: true })) return;
       setIsLoading(true);
       try {
           const { error } = await supabase.from('profiles').delete().eq('id', selectedEmployeeId);
@@ -1096,18 +1115,27 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
   // (CostAnalysis komponenti). Eski kişi-bazlı maaş kartı kaldırıldı,
   // yerine genel KPI'lar + lokasyon/personel barları + günlük döküm geldi.
   const renderFinancialContent = () => {
-    const allEmps: CAEmployee[] = [...employees, ...adminEmployees].map(e => ({
-      id: e.id,
-      name: e.name,
-      role: e.role,
-      email: e.email,
-      hourlyRate: e.hourlyRate,
-      // DB'de henüz monthly_net_salary / salary_history kolonları yok.
-      // Eklenince adapter buradan beslenir.
-      monthly_net_salary: 0,
-      salary_history: undefined,
-    }));
-    const allLogs: CAWorkLog[] = timeLogs.map(l => ({
+    // Süper admin (sistem kurucusu) maliyet analizinin hiçbir yerinde görünmez:
+    // ne Personel Maaş Tablosu'nda, ne KPI'larda, ne de günlük dökümde.
+    // Mesai kayıtları da elenmezse tablodan düşen kişi günlük dökümde
+    // "Bilinmeyen / 0 €" olarak kalırdı; o yüzden loglar da filtreleniyor.
+    const superAdminIds = new Set(
+      allEmployees.filter(e => isSuperAdminAccount(e.email)).map(e => e.id)
+    );
+    const allEmps: CAEmployee[] = allEmployees
+      .filter(e => !superAdminIds.has(e.id))
+      .map(e => ({
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        email: e.email,
+        hourlyRate: e.hourlyRate,
+        // DB'de henüz monthly_net_salary / salary_history kolonları yok.
+        // Eklenince adapter buradan beslenir.
+        monthly_net_salary: 0,
+        salary_history: undefined,
+      }));
+    const allLogs: CAWorkLog[] = timeLogs.filter(l => !superAdminIds.has(l.employeeId)).map(l => ({
       id: l.id,
       employeeId: l.employeeId,
       date: l.date,
@@ -1416,7 +1444,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                                                                                 </span>
                                                                                 <button
                                                                                     onClick={async () => {
-                                                                                        if(!confirm(t('pay.deleteTransferConfirm'))) return;
+                                                                                        if(!await confirmDialog({ message: t('pay.deleteTransferConfirm'), danger: true })) return;
                                                                                         await supabase.from('personnel_transfers').delete().eq('id', tr.id);
                                                                                         // Takvimden de ilgili etkinliği sil
                                                                                         await supabase.from('calendar_events').delete()
@@ -1590,7 +1618,7 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                                   <Edit2 size={14} />
                               </button>
                               <button
-                                  onClick={() => { if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) handleDeleteTimeLog(log.id); }}
+                                  onClick={async () => { if (await confirmDialog({ message: t('pay.deleteLogConfirm'), danger: true })) handleDeleteTimeLog(log.id); }}
                                   className="px-3 py-2 bg-white dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-500 hover:text-red-400 rounded-lg border border-slate-200 dark:border-zinc-800"
                                   title="Sil"
                               >
@@ -1638,7 +1666,10 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                     <div className="md:hidden text-right ml-2"><h2 className="text-sm font-bold text-slate-900 dark:text-white">{targetEmployee.name.split(' ')[0]}</h2></div>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
-                    <button onClick={() => setShowQrModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-xs md:text-sm font-medium rounded-lg"><QrCode size={16} /> <span className="inline">{t('qr.scanBtn')}</span></button>
+                    {/* QR ile mesai sistemi gizli (lib/featureFlags.ts → QR_ATTENDANCE_ENABLED). */}
+                    {QR_ATTENDANCE_ENABLED && (
+                        <button onClick={() => setShowQrModal(true)} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-xs md:text-sm font-medium rounded-lg"><QrCode size={16} /> <span className="inline">{t('qr.scanBtn')}</span></button>
+                    )}
                     {/* Manuel "Saat Ekle" — herkese açık (personel + tüm adminler).
                         Personel kayıtları status='Bekliyor' olarak admin onayına düşer
                         (handleSaveTimeLog:782); admin kayıtları doğrudan 'Onaylandı'. */}
@@ -2148,8 +2179,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
             );
         })()}
 
-        {/* QR SCAN MODAL */}
-        {showQrModal && (
+        {/* QR SCAN MODAL — QR_ATTENDANCE_ENABLED false iken hiç açılmaz */}
+        {QR_ATTENDANCE_ENABLED && showQrModal && (
             <div className="absolute inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
                 <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
                     <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center">
@@ -2183,8 +2214,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
             const previewHours = Number((previewMins / 60).toFixed(2));
             const isEditing = !!editingLogId;
             return (
-            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto my-auto">
                     <div className="p-6 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <Clock size={20} className="text-indigo-500" /> {isEditing ? t('pay.editHours') : t('pay.addHours')}
@@ -2197,8 +2228,8 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                              <div className="space-y-1"><label className="text-xs text-slate-600 dark:text-zinc-400">Şube</label><select value={timeForm.branch} onChange={e => setTimeForm({...timeForm, branch: e.target.value as Branch})} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white">{Object.values(Branch).map(b=><option key={b} value={b}>{b}</option>)}</select></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-1"><label className="text-xs text-slate-600 dark:text-zinc-400">{t('cal.startTime')}</label><input type="time" required value={timeForm.startTime} onChange={e => setTimeForm({...timeForm, startTime: e.target.value})} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white"/></div>
-                             <div className="space-y-1"><label className="text-xs text-slate-600 dark:text-zinc-400">{t('cal.endTime')}</label><input type="time" required value={timeForm.endTime} onChange={e => setTimeForm({...timeForm, endTime: e.target.value})} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white"/></div>
+                             <div className="space-y-1"><label className="text-xs text-slate-600 dark:text-zinc-400">{t('cal.startTime')} <span className="text-red-500">*</span></label><input type="time" required value={timeForm.startTime} onChange={e => setTimeForm({...timeForm, startTime: e.target.value})} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white"/></div>
+                             <div className="space-y-1"><label className="text-xs text-slate-600 dark:text-zinc-400">{t('cal.endTime')} <span className="text-red-500">*</span></label><input type="time" required value={timeForm.endTime} onChange={e => setTimeForm({...timeForm, endTime: e.target.value})} className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white"/></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 items-end">
                              <div className="space-y-1">
@@ -2211,6 +2242,33 @@ const Payroll: React.FC<PayrollProps> = ({ currentUser, onNotify }) => {
                                 <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-zinc-500">{t('pay.totalHours')}</div>
                                 <div className="text-lg font-bold text-emerald-400 tabular-nums">{formatHoursHumanTR(previewHours)}</div>
                              </div>
+                        </div>
+                        {/* Konum + açıklama zorunlu — handleSaveTimeLog:790 da ayrıca kontrol eder. */}
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-600 dark:text-zinc-400">
+                                {t('pay.location')} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={timeForm.location}
+                                onChange={e => setTimeForm({...timeForm, location: e.target.value})}
+                                placeholder={t('pay.locationPlaceholder')}
+                                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-600 dark:text-zinc-400">
+                                {t('pay.description')} <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                required
+                                rows={3}
+                                value={timeForm.description}
+                                onChange={e => setTimeForm({...timeForm, description: e.target.value})}
+                                placeholder={t('pay.descriptionPlaceholder')}
+                                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 resize-none"
+                            />
                         </div>
                         {isEditing && (
                             <div className="text-[11px] text-slate-500 dark:text-zinc-500 italic border-t border-slate-200 dark:border-zinc-800 pt-3">

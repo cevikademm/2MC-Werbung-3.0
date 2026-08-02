@@ -5,6 +5,7 @@ import { includeAsPersonnel } from '../constants';
 import { supabase } from '../lib/supabase';
 import { formatLocalDate, formatHoursAsHM, parseCellIds } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { GlowingEffect } from './ui/glowing-effect';
 
 
@@ -461,7 +462,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentUser }) => {
 
   const handleDeleteEvent = async () => {
       if (!selectedEvent || selectedEvent.isTask || selectedEvent.isShift) return;
-      if (confirm(t('cal.deleteConfirm'))) {
+      if (await confirmDialog({ message: t('cal.deleteConfirm'), danger: true })) {
           const { error } = await supabase.from('calendar_events').delete().eq('id', selectedEvent.id);
           if (!error) {
               setEvents(events.filter(e => e.id !== selectedEvent.id));

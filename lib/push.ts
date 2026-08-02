@@ -14,7 +14,7 @@ import { supabase } from './supabase';
 // (Supabase URL/anon key ile aynı yaklaşım). Gerçek gizli olan VAPID_PRIVATE_KEY
 // yalnızca Supabase Edge Function secret'larında durur.
 const FALLBACK_VAPID_PUBLIC_KEY =
-  'BMpVOlJUO3-sx6fUPN4r75pRur8nno_ZNHOLuX7wtFrgA1NPOnlDyEwnPHPKOjOJ08wGqxG28mHVS-ZtN9HU6NA';
+  'BLFObUKpmcWMGC2v8SPSVRT9WGc3adOBAFUgmGIy1H4CKQ-vbeU1Lq1cKtIABAKYu4SsLDUrG3ZQP7P2bZddSV8';
 const VAPID_PUBLIC_KEY = ((import.meta.env.VITE_VAPID_PUBLIC_KEY || FALLBACK_VAPID_PUBLIC_KEY) as string).trim();
 
 // ---------------- Yardımcılar ----------------

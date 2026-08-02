@@ -18,6 +18,8 @@ import NotificationPreferencesCard from './components/NotificationPreferencesCar
 import { DeviceHistoryCard, PhoneConflictsCard } from './components/DeviceTrustCard';
 import { canSeeMap } from './lib/geofence';
 import { canSeeDeviceInfo } from './lib/utils';
+import { QR_ATTENDANCE_ENABLED } from './lib/featureFlags';
+import { ToastHost, confirmDialog } from './lib/toast';
 
 // Lazy: zxing/browser top-level import'u prod minify'da bozuluyordu
 // lazyWithRetry: yeni deployment sonrası eski hash'li chunk için MIME hatasında auto-recover
@@ -162,7 +164,7 @@ const Settings = ({ currentUser, onUpdateUser }: { currentUser: Employee | null,
             return;
         }
 
-        if (!window.confirm(t('app.confirmResetOne'))) {
+        if (!await confirmDialog({ message: t('app.confirmResetOne'), danger: true })) {
             return;
         }
 
@@ -197,10 +199,10 @@ const Settings = ({ currentUser, onUpdateUser }: { currentUser: Employee | null,
     };
 
     const handleResetAllPasswords = async () => {
-        if (!window.confirm(t('app.confirmResetAll'))) {
+        if (!await confirmDialog({ message: t('app.confirmResetAll'), danger: true })) {
             return;
         }
-        if (!window.confirm(t('app.confirmResetAll2'))) {
+        if (!await confirmDialog({ message: t('app.confirmResetAll2'), danger: true })) {
             return;
         }
 
@@ -493,7 +495,7 @@ const Settings = ({ currentUser, onUpdateUser }: { currentUser: Employee | null,
                     {/* PUSH NOTIFICATION SUBSCRIPTION (PWA) */}
                     <PushSubscriptionCard userId={currentUser?.id} />
 
-                    {/* NOTIFICATION PREFERENCES (Admin only) */}
+                    {/* NOTIFICATION PREFERENCES — Admin: operasyon + kişisel, Personel: kişisel hatırlatmalar */}
                     <NotificationPreferencesCard currentUser={currentUser} />
 
                     {/* TELEFON GEÇMİŞİ + ÇAKIŞMALARI — yalnızca cevikademm@gmail.com (Admin).
@@ -791,6 +793,11 @@ const AppContent: React.FC = () => {
       case 'payroll':
         return <Payroll currentUser={currentUser || MOCK_EMPLOYEES[0]} onNotify={addNotification} />;
       case 'qr':
+        // QR mesai sistemi gizli (lib/featureFlags.ts). #qr ile doğrudan
+        // gelinse bile panele düşürülür.
+        if (!QR_ATTENDANCE_ENABLED) {
+          return <Dashboard notifications={notifications} currentUser={currentUser || MOCK_EMPLOYEES[0]} onUpdateUser={setCurrentUser} />;
+        }
         return (
           <Suspense fallback={<div className="p-12 flex items-center justify-center text-slate-600 dark:text-zinc-400"><Loader2 className="animate-spin mr-2" size={20}/> {t('common.loading')}</div>}>
             <QrCheckIn currentUser={currentUser || MOCK_EMPLOYEES[0]} />
@@ -876,6 +883,9 @@ const App: React.FC = () => {
         <ThemeProvider>
             <LanguageProvider>
                 <AppContent />
+                {/* Native alert()/confirm() yerine kart tasarımlı bildirimler.
+                    Mount olunca window.alert'i devralır (lib/toast.tsx). */}
+                <ToastHost />
             </LanguageProvider>
         </ThemeProvider>
     );

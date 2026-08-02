@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Employee, Branch } from '../types';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import {
   AlertTriangle, Package, TrendingDown, TrendingUp, ShieldAlert, BarChart3,
   Plus, Trash2, Pencil, CheckCircle2, XCircle, Filter, Calendar, MapPin, Clock,
@@ -382,7 +383,7 @@ const LossControl: React.FC<LossControlProps> = ({ currentUser }) => {
 
   // Delete handlers — admin-only RPC
   const handleDeleteEntry = async (id: string) => {
-    if (!confirm(t('loss.confirmDeleteStock'))) return;
+    if (!await confirmDialog({ message: t('loss.confirmDeleteStock'), danger: true })) return;
     try {
       const { error } = await supabase.rpc('lc_delete_stock_entry', {
         p_caller_id: currentUser.id,
@@ -396,7 +397,7 @@ const LossControl: React.FC<LossControlProps> = ({ currentUser }) => {
   };
 
   const handleDeleteCount = async (id: string) => {
-    if (!confirm(t('loss.confirmDeleteCount'))) return;
+    if (!await confirmDialog({ message: t('loss.confirmDeleteCount'), danger: true })) return;
     try {
       const { error } = await supabase.rpc('lc_delete_stock_count', {
         p_caller_id: currentUser.id,

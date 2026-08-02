@@ -3,6 +3,7 @@ import { Message, Employee, Role } from '../types';
 import { Search, Send, Mail, ChevronLeft, MessageSquare, Plus, X, Loader2, Check, CheckCheck, ShieldAlert, Trash2, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { GlowingEffect } from './ui/glowing-effect';
 import { buildWhatsAppUrl } from '../lib/support';
 
@@ -385,7 +386,7 @@ const Messages: React.FC<MessagesProps> = ({ currentUser }) => {
     };
 
     const handleDeleteMessage = async (msgId: string) => {
-        if (!confirm(t('msg.deleteConfirm'))) return;
+        if (!await confirmDialog({ message: t('msg.deleteConfirm'), danger: true })) return;
         try {
             const { error } = await supabase.from('messages').delete().eq('id', msgId);
             if (error) throw error;

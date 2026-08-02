@@ -11,12 +11,15 @@
 // - message : main thread'den postMessage ile lokal bildirim göster
 // =============================================================
 
-const CACHE_VERSION = 'bac-handels-v2';
+// v3: logolar harici Supabase Storage'dan yerel public/ dosyalarına taşındı.
+const CACHE_VERSION = 'bac-handels-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
   '/index.css',
+  '/logo4.png',
+  '/logo_werbung.png',
 ];
 
 // ------------ INSTALL ------------
@@ -130,10 +133,10 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     icon:
       payload.icon ||
-      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo4.png',
+      '/logo4.png',
     badge:
       payload.badge ||
-      'https://wgfkoxjlcovrkzrustpy.supabase.co/storage/v1/object/public/sales_receipts/logo4.png',
+      '/logo4.png',
     tag: payload.tag || 'bac-handels-notification',
     requireInteraction: payload.requireInteraction === true,
     vibrate: payload.vibrate || [120, 60, 120],

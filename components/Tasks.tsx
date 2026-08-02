@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, MoreVertical, Plus, Edit2, Trash2, CheckSquare,
 import { includeAsPersonnel } from '../constants';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/i18n';
+import { confirmDialog } from '../lib/toast';
 import { notifyEvent } from '../lib/notifyEvent';
 import { translateContent } from '../services/geminiService';
 import { GlowingEffect } from './ui/glowing-effect';
@@ -314,7 +315,7 @@ const Tasks: React.FC<TasksProps> = ({ currentUser }) => {
     };
     
     const handleDeleteTask = async (taskId: string) => {
-        if (!confirm(t('tasks.confirmDelete'))) return;
+        if (!await confirmDialog({ message: t('tasks.confirmDelete'), danger: true })) return;
         const taskToDelete = tasks.find(t => t.id === taskId);
         try {
             const { error } = await supabase.from('tasks').delete().eq('id', taskId);

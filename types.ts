@@ -35,6 +35,8 @@ export interface TimeLog {
   breakDuration: number; // minutes
   totalHours: number;
   branch?: string; // Çalışılan şube
+  description?: string; // Yapılan işin açıklaması (zorunlu — manuel & QR)
+  location?: string; // Konum bilgisi (manuel: serbest metin, QR: GPS koordinatı)
   status: 'Bekliyor' | 'Onaylandı' | 'Reddedildi';
   // QR mesai alanları (optional — manuel kayıtlarda boş)
   method?: 'manual' | 'qr';

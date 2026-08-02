@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, AlertTriangle, ShoppingBag, Clock, FileText, Loader2, RefreshCw, CheckCircle2, BarChart3, MapPin, DoorOpen, LogIn, ListChecks } from 'lucide-react';
+import { Bell, AlertTriangle, ShoppingBag, Clock, FileText, Loader2, RefreshCw, CheckCircle2, BarChart3, MapPin, DoorOpen, LogIn, ListChecks, UserPlus, TimerReset, CalendarX, BellRing } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Employee, Role } from '../types';
 import { useLanguage } from '../lib/i18n';
 
 // =============================================================
-// NotificationPreferencesCard — Admin için bildirim tercihleri
+// NotificationPreferencesCard — 2MC bildirim tercihleri
 // =============================================================
-// Sadece Admin role kullanıcılarına gösterilir.
-// 4 toggle: off_shift_sale, weekly_sales_anomaly, off_shift_qr, non_kiosk_check
-// + manuel "Şimdi anomali kontrol et" butonu
+// İki bölüm:
+//   • "2MC Operasyon Bildirimleri" (audience: 'admin') — sadece Admin görür.
+//   • "Kişisel Hatırlatmalarım"     (audience: 'staff') — herkes görür,
+//     kullanıcının kendisine giden hatırlatmaları yönetir.
+// + Admin'ler için manuel "Şimdi anomali kontrol et" butonu
 // =============================================================
 
 interface NotificationPrefs {
@@ -21,6 +23,10 @@ interface NotificationPrefs {
   geofence_exit: boolean;
   qr_check: boolean;
   task_activity: boolean;
+  new_user: boolean;
+  shift_overrun: boolean;
+  missing_check_in: boolean;
+  shift_reminder: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
@@ -32,6 +38,10 @@ const DEFAULT_PREFS: NotificationPrefs = {
   geofence_exit: true,
   qr_check: true,
   task_activity: true,
+  new_user: true,
+  shift_overrun: true,
+  missing_check_in: true,
+  shift_reminder: true,
 };
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
@@ -46,6 +56,9 @@ interface ToggleItem {
   descKey: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   color: string;
+  // 'admin' → operasyon bildirimi (sadece Admin görür)
+  // 'staff' → kişisel hatırlatma (herkes görür, kendine gelir)
+  audience: 'admin' | 'staff';
 }
 
 const TOGGLES: ToggleItem[] = [
@@ -55,6 +68,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.offShiftSaleDesc',
     icon: ShoppingBag,
     color: 'text-orange-400',
+    audience: 'admin',
   },
   {
     key: 'weekly_sales_anomaly',
@@ -62,6 +76,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.weeklyAnomalyDesc',
     icon: BarChart3,
     color: 'text-purple-400',
+    audience: 'admin',
   },
   {
     key: 'off_shift_qr',
@@ -69,6 +84,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.offShiftQrDesc',
     icon: Clock,
     color: 'text-amber-400',
+    audience: 'admin',
   },
   {
     key: 'non_kiosk_check',
@@ -76,6 +92,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.nonKioskDesc',
     icon: FileText,
     color: 'text-blue-400',
+    audience: 'admin',
   },
   {
     key: 'geofence_enter',
@@ -83,6 +100,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.geofenceEnterDesc',
     icon: MapPin,
     color: 'text-emerald-400',
+    audience: 'admin',
   },
   {
     key: 'geofence_exit',
@@ -90,6 +108,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.geofenceExitDesc',
     icon: DoorOpen,
     color: 'text-rose-400',
+    audience: 'admin',
   },
   {
     key: 'qr_check',
@@ -97,6 +116,7 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.qrCheckDesc',
     icon: LogIn,
     color: 'text-green-400',
+    audience: 'admin',
   },
   {
     key: 'task_activity',
@@ -104,6 +124,40 @@ const TOGGLES: ToggleItem[] = [
     descKey: 'notif.taskActivityDesc',
     icon: ListChecks,
     color: 'text-indigo-400',
+    audience: 'admin',
+  },
+  {
+    key: 'new_user',
+    titleKey: 'notif.newUserTitle',
+    descKey: 'notif.newUserDesc',
+    icon: UserPlus,
+    color: 'text-cyan-400',
+    audience: 'admin',
+  },
+  {
+    key: 'shift_overrun',
+    titleKey: 'notif.shiftOverrunTitle',
+    descKey: 'notif.shiftOverrunDesc',
+    icon: TimerReset,
+    color: 'text-fuchsia-400',
+    audience: 'admin',
+  },
+  {
+    key: 'missing_check_in',
+    titleKey: 'notif.missingCheckInTitle',
+    descKey: 'notif.missingCheckInDesc',
+    icon: CalendarX,
+    color: 'text-red-400',
+    audience: 'admin',
+  },
+  // --- Kişisel (personelin kendisine giden) hatırlatmalar ---
+  {
+    key: 'shift_reminder',
+    titleKey: 'notif.shiftReminderTitle',
+    descKey: 'notif.shiftReminderDesc',
+    icon: BellRing,
+    color: 'text-amber-400',
+    audience: 'staff',
   },
 ];
 
@@ -118,9 +172,10 @@ const NotificationPreferencesCard: React.FC<Props> = ({ currentUser }) => {
 
   const isAdmin = currentUser?.role === Role.ADMIN;
 
-  // İlk yüklemede mevcut tercihleri çek
+  // İlk yüklemede mevcut tercihleri çek — personel de kendi
+  // "Kişisel Hatırlatmalarım" bölümünü görüp yönetebilir.
   useEffect(() => {
-    if (!currentUser?.id || !isAdmin) {
+    if (!currentUser?.id) {
       setLoading(false);
       return;
     }
@@ -147,7 +202,7 @@ const NotificationPreferencesCard: React.FC<Props> = ({ currentUser }) => {
     return () => {
       cancelled = true;
     };
-  }, [currentUser?.id, isAdmin]);
+  }, [currentUser?.id]);
 
   const togglePref = async (key: keyof NotificationPrefs) => {
     if (!currentUser?.id) return;
@@ -203,7 +258,51 @@ const NotificationPreferencesCard: React.FC<Props> = ({ currentUser }) => {
     }
   };
 
-  if (!isAdmin) return null;
+  const renderToggle = (item: ToggleItem) => {
+    const Icon = item.icon;
+    const enabled = !!prefs[item.key];
+    const saving = savingKey === item.key;
+    return (
+      <div
+        key={item.key}
+        className="bg-white dark:bg-zinc-900 rounded-lg p-3 border border-slate-200 dark:border-zinc-800/50 flex items-start gap-3"
+      >
+        <Icon size={18} className={`${item.color} mt-0.5 shrink-0`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white">{t(item.titleKey)}</div>
+          <div className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5">{t(item.descKey)}</div>
+        </div>
+        <button
+          onClick={() => togglePref(item.key)}
+          disabled={saving}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
+            enabled ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-zinc-700'
+          } ${saving ? 'opacity-60' : ''}`}
+          aria-pressed={enabled}
+          aria-label={t(item.titleKey)}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+              enabled ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+          {saving && (
+            <Loader2
+              size={10}
+              className="animate-spin absolute -right-5 top-1.5 text-slate-600 dark:text-zinc-400"
+            />
+          )}
+        </button>
+      </div>
+    );
+  };
+
+  const adminToggles = TOGGLES.filter((x) => x.audience === 'admin');
+  const staffToggles = TOGGLES.filter((x) => x.audience === 'staff');
+
+  if (!currentUser?.id) return null;
+
+  const sectionTitle = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-500 mb-2';
 
   return (
     <div className="bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl p-6">
@@ -211,57 +310,31 @@ const NotificationPreferencesCard: React.FC<Props> = ({ currentUser }) => {
         <Bell size={20} className="text-indigo-400" />
         {t('notif.title')}
       </h3>
-      <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">{t('notif.desc')}</p>
+      <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">
+        {isAdmin ? t('notif.desc') : t('notif.staffDesc')}
+      </p>
 
       {loading ? (
         <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-400 text-sm py-6">
           <Loader2 size={16} className="animate-spin" /> {t('notif.loading')}
         </div>
       ) : (
-        <div className="space-y-2">
-          {TOGGLES.map((item) => {
-            const Icon = item.icon;
-            const enabled = !!prefs[item.key];
-            const saving = savingKey === item.key;
-            return (
-              <div
-                key={item.key}
-                className="bg-white dark:bg-zinc-900 rounded-lg p-3 border border-slate-200 dark:border-zinc-800/50 flex items-start gap-3"
-              >
-                <Icon size={18} className={`${item.color} mt-0.5 shrink-0`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white">{t(item.titleKey)}</div>
-                  <div className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5">{t(item.descKey)}</div>
-                </div>
-                <button
-                  onClick={() => togglePref(item.key)}
-                  disabled={saving}
-                  className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
-                    enabled ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-zinc-700'
-                  } ${saving ? 'opacity-60' : ''}`}
-                  aria-pressed={enabled}
-                  aria-label={t(item.titleKey)}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                      enabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                  {saving && (
-                    <Loader2
-                      size={10}
-                      className="animate-spin absolute -right-5 top-1.5 text-slate-600 dark:text-zinc-400"
-                    />
-                  )}
-                </button>
-              </div>
-            );
-          })}
+        <div className="space-y-5">
+          {isAdmin && (
+            <div>
+              <div className={sectionTitle}>{t('notif.sectionOps')}</div>
+              <div className="space-y-2">{adminToggles.map(renderToggle)}</div>
+            </div>
+          )}
+          <div>
+            <div className={sectionTitle}>{t('notif.sectionPersonal')}</div>
+            <div className="space-y-2">{staffToggles.map(renderToggle)}</div>
+          </div>
         </div>
       )}
 
-      {/* Manuel anomali tetikleyici */}
-      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800/50">
+      {/* Manuel anomali tetikleyici — sadece admin */}
+      <div className={`mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800/50 ${isAdmin ? '' : 'hidden'}`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
